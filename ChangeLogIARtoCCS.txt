@@ -1,0 +1,22 @@
+Change Log IAR to CCS
+
+prgm all 6 interrupts
+conf.h added port pins, macros BIT_CLT, BIT_SET
+adc.c line239
+clock.c DIVA0 and DIVA1
+keypad.h BR_KEY, KEYMAT_COL, PWR_SW
+spi.c 146,161
+system.h in bits
+keypad.h keymat rows
+keypad.c bitset and clr keypad rows
+system.h out bits
+keypad.c CC_CP_PWRON_HIGH
+timer_b.c CC_CP_PWRON_LOW, DSS_CP_SPI_CS_HIGH, DSS_CP_SPI_CS_LOW
+command.c CP_INT_HIGH, CP_INT_LOW
+power.c CP_PWR_ENABLE,CP_PWR_DISABLE, CP_CHRG_PWRON, CP_CHRG_PWROFF
+i2c.c CP_SPI_SIMO_3V3_HIGH, CP_SPI_SIMO_3V3_LOW
+br_display.h BRD0_DATA_IN, BRD1_DATA_OUT, BRD2_STROBE, BRD3_CLK, BRD4_SHUTDOWN, BRD_ENABLE(), BRD_DISABLE() 
+br_display.c BIT_CLR(BRD,BRD1_DATA_OUT, BIT_SET(BRD,BRD2_STROBE), BIT_CLR(BRD,BRD3_CLK), BIT_SET(BRD,BRD1_DATA_OUT), BIT_CLR(BRD,BRD2_STROBE), BIT_SET(BRD,BRD3_CLK)
+main.c CP_SPI_SIMO_3V3_LOW, CP_BATPWR_ENABLE, CP_USBPWR_ENABLE, CP_USBOTG_S_TPS, I2C2_ENABLE, CP_BATPWR_DISABLE, CP_PWR01_ENABLE, EN_1V8_3V3_LVL_TR
+system.c by java code
+Chnages on bit comparions (== and !=)
