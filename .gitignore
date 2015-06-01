@@ -1,0 +1,9 @@
+#Binaries
+Debug__GCC/
+Debug__TI/
+Release__GCC/
+Release__TI/
+
+#CCS Files
+.launches/
+targetConfigs/
