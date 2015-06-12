@@ -43,12 +43,12 @@
 *********************************************************************************************************
 */
 #define BAT_SHORT_CCT_THRESHOLD         (((2.7/2)/2.5)      * 4096)     /* Threshold    - 2.7V      */
-#define BAT_DEAD_THRESHOLD              (((3.0/2)/2.5)      * 4096)     /* Threshold    - 3.1V      */ 
-#define BAT_GOOD_THRESHOLD              (((3.3/2)/2.5)      * 4096)     /* Threshold    - 3.3V      */ 
-#define BAT_FULL_THRESHOLD              (((4.15/2)/2.5)     * 4096)     /* Threshold    - 4.15V     */ 
+#define BAT_DEAD_THRESHOLD              (((3.1/2)/2.5)      * 4096)     /* Threshold    - 3.1V      */
+#define BAT_WEAK_THRESHOLD              (((3.3/2)/2.5)      * 4096)     /* Threshold    - 3.3V      */ 
+#define BAT_GOOD_THRESHOLD              (((4.15/2)/2.5)     * 4096)     /* Threshold    - 4.15V     */ 
 #define BAT_HISTERESIS                  (((0.06/2)/2.5)     * 4096)     /* Threshold    - 0.06V     */ 
 #define BAT_TEMP_THRESHOLD              (((3.3*50/150)/3.3) * 4096)     /* Threshold    - 1.1V      */
-#define BAT_ERROR_THRESHOLD             0                               /* Threshold    - ERROR      */
+#define BAT_ERROR_THRESHOLD             0                               /* Threshold    - ERROR     */
 
 /*
 *********************************************************************************************************
@@ -77,6 +77,8 @@
  INT16U bat_vlt    = 0;
  
  INT16U vol_mv = 0;
+
+ double bat_good_threshold = BAT_GOOD_THRESHOLD;
 /*
 *********************************************************************************************************
 *   LOCAL FUNCTION PROTOTYPES
@@ -96,8 +98,8 @@
 *********************************************************************************************************
 *********************************************************************************************************
 */
-INT08U  Bat_GetInitialBatteryLevel (void)//{KW}: No i2c communications in this
-{    
+INT08U  Bat_GetInitialBatteryLevel (void)		// No i2c communication in this
+{
     ADC12_SingleConv(CP_VBAT_VMES, TRUE);  
     
     bat_vlt = ADC12_Results[CP_VBAT_VMES];
@@ -108,10 +110,10 @@ INT08U  Bat_GetInitialBatteryLevel (void)//{KW}: No i2c communications in this
     else if (bat_vlt <= BAT_DEAD_THRESHOLD){ 
         return BAT_LEVEL_DEAD;
     } 
-    else if (bat_vlt <= BAT_GOOD_THRESHOLD){ 
-        return BAT_LEVEL_WEAK;  /*{KW}: This is used for bat bad beep */
+    else if (bat_vlt <= BAT_WEAK_THRESHOLD){ 
+        return BAT_LEVEL_WEAK;
     } 
-    else if (bat_vlt <= BAT_FULL_THRESHOLD){
+    else if (bat_vlt <= BAT_GOOD_THRESHOLD){
         return BAT_LEVEL_GOOD;
     }    
     else{
@@ -121,35 +123,18 @@ INT08U  Bat_GetInitialBatteryLevel (void)//{KW}: No i2c communications in this
 
 INT08U  Bat_GetBatteryLevel (void)
 {   
-    double bat_full_threshold      = 0;
     INT08U is_charging = 0;
     
-    if(charger_activity == CHGR_WENT_FULL)
+    if(bat_good_threshold == BAT_GOOD_THRESHOLD - BAT_HISTERESIS)
     {
-      bat_full_threshold = BAT_FULL_THRESHOLD - BAT_HISTERESIS;
+    	bat_vlt = Bat_GetFuelGaugeVoltage();		// Read battery voltage from fuel gauge once battery went full until determining the charge restart point
+    	if(bat_vlt == 0)
+    		return BAT_LEVEL_ERROR;
     }
     else
     {
-      bat_full_threshold = BAT_FULL_THRESHOLD;
-    }     
-    
-    /*Read battery voltage */
-    if(charger_activity == CHGR_WENT_FULL) 
-    {
-      /* Read from fuel gauge once battery went full, 
-         until determining the charge restart point 
-      */
-      bat_vlt = Bat_GetFuelGaugeVoltage();
-      if(bat_vlt == 0)
-        return BAT_LEVEL_ERROR;
-    }
-    else
-    {
-      /* Read from voltage divider
-         under normal conditions
-      */    
-      ADC12_SingleConv(CP_VBAT_VMES, TRUE); 
-      bat_vlt = ADC12_Results[CP_VBAT_VMES];
+    	ADC12_SingleConv(CP_VBAT_VMES, TRUE);		// Read battery voltage from voltage divider under normal conditions
+    	bat_vlt = ADC12_Results[CP_VBAT_VMES];
     }
     
     if (bat_vlt <= BAT_SHORT_CCT_THRESHOLD){
@@ -158,28 +143,30 @@ INT08U  Bat_GetBatteryLevel (void)
     else if (bat_vlt <= BAT_DEAD_THRESHOLD){ 
         return BAT_LEVEL_DEAD;
     } 
-    else if (bat_vlt <= BAT_GOOD_THRESHOLD){ 
-        return BAT_LEVEL_WEAK;  /*{KW}: This is used for bat bad beep */
+    else if (bat_vlt <= BAT_WEAK_THRESHOLD){ 
+        return BAT_LEVEL_WEAK;
     } 
-    else if (bat_vlt <= bat_full_threshold){
+    else if (bat_vlt <= bat_good_threshold){
+    	bat_good_threshold = BAT_GOOD_THRESHOLD;
         return BAT_LEVEL_GOOD;
     }    
     else{
         is_charging = Bat_IsFuelGaugeBatCharging();
-        if(is_charging == BAT_IS_CHARGING){    
-          bat_cur = Bat_GetFuelGaugeAvgCurr_mA();
-          //Sys_DelayMs(1); //KW: test
-          if(bat_cur == 0)
-            return BAT_LEVEL_ERROR;
-          if(bat_cur <= BAT_CHG_TERM_CUR_300) {/* {KW}: Charge Termination current 300mA */   
-            return BAT_LEVEL_FULL; 
-          }
-          else
-          {
-            return BAT_LEVEL_GOOD;
-          }
+        if(is_charging == BAT_IS_CHARGING){
+        	bat_cur = Bat_GetFuelGaugeAvgCurr_mA();
+        	if(bat_cur == 0)
+        		return BAT_LEVEL_ERROR;
+
+        	if(bat_cur <= BAT_CHG_TERM_CUR_300) {			// Charge Termination current 300mA
+        		bat_good_threshold = BAT_GOOD_THRESHOLD - BAT_HISTERESIS;
+        		return BAT_LEVEL_FULL;
+        	}
+        	else
+        	{
+        		return BAT_LEVEL_GOOD;
+        	}
         }else if(is_charging == BAT_IS_CHARGING_ERROR){
-          return BAT_LEVEL_ERROR;
+        	return BAT_LEVEL_ERROR;
         }
         return BAT_LEVEL_FULL;       
     }
@@ -206,62 +193,56 @@ BOOLEAN  Bat_GetFuelGaugeStatus (PTR_INT08U buf, INT08U size)
     INT08U buf_wr = 0;
     INT08U i      = 0;
     
-    if (size < 6) {     /* check buffer size */ 
+    if (size < 6) {     /* check buffer size */
         return FALSE;
     }
     
     /* BQ27200_TEMP_LOW_REG */
     do{
         buf_wr = BQ27200_TEMP_LOW_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &buf[i++], 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &buf[i++], 1, TRUE);
         if(ret == I2C_FAULT)
-          goto i2c_error;
+        	goto i2c_error;
     }while (ret == I2C_BUSY);
     
     /* BQ27200_TEMP_HIGH_REG */
     do{
         buf_wr = BQ27200_TEMP_HIGH_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &buf[i++], 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &buf[i++], 1, TRUE);
         if(ret == I2C_FAULT)
-          goto i2c_error;
+        	goto i2c_error;
     }while (ret == I2C_BUSY);
 
     /* BQ27200_VOLT_LOW_REG */
     do{
         buf_wr = BQ27200_VOLT_LOW_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &buf[i++], 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &buf[i++], 1, TRUE);
         if(ret == I2C_FAULT)
-          goto i2c_error;
+        	goto i2c_error;
     }while (ret == I2C_BUSY);
 
     /* BQ27200_VOLT_HIGH_REG */
     do{
         buf_wr = BQ27200_VOLT_HIGH_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &buf[i++], 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &buf[i++], 1, TRUE);
         if(ret == I2C_FAULT)
-          goto i2c_error;
+        	goto i2c_error;
     }while (ret == I2C_BUSY);
 
     /* BQ27200_FLAGS_REG */
     do{
         buf_wr = BQ27200_FLAGS_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &buf[i++], 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &buf[i++], 1, TRUE);
         if(ret == I2C_FAULT)
-          goto i2c_error;
+        	goto i2c_error;
     }while (ret == I2C_BUSY);
 
     /* BQ27200_RSOC_REG */
     do{
         buf_wr = BQ27200_RSOC_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &buf[i++], 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &buf[i++], 1, TRUE);
         if(ret == I2C_FAULT)
-          goto i2c_error;
+        	goto i2c_error;
     }while (ret == I2C_BUSY);   
     
     return TRUE;
@@ -283,19 +264,17 @@ INT16U Bat_GetFuelGaugeAvgCurr_mA (void)
     /* BQ27200_AVG_CUR_LOW_REG */
     do{
         buf_wr = BQ27200_AVG_CUR_LOW_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &avg_cur_low, 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &avg_cur_low, 1, TRUE);
         if(ret == I2C_FAULT)
-          goto i2c_error;
+        	goto i2c_error;
     }while (ret == I2C_BUSY);
 
     /* BQ27200_AVG_CUR_HIGH_REG */
     do{
         buf_wr = BQ27200_AVG_CUR_HIGH_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &avg_cur_high, 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &avg_cur_high, 1, TRUE);
         if(ret == I2C_FAULT)
-          goto i2c_error;
+        	goto i2c_error;
     }while (ret == I2C_BUSY);    
     
     avg_cur_ma = (INT16U) (((((double)(avg_cur_high << 8) + (double)(avg_cur_low)))*3.57) / 20);    
@@ -313,7 +292,6 @@ INT16U Bat_GetFuelGaugeVoltage (void)
     
     INT08U vol_low      = 0;
     INT08U vol_high     = 0;
-//    INT16U vol_mv = 0;
     INT16U vol_adc_units = 0;
     
     Sys_DelayMs(1);    
@@ -321,19 +299,17 @@ INT16U Bat_GetFuelGaugeVoltage (void)
     /* BQ27200_VOLT_LOW_REG */
     do{
         buf_wr = BQ27200_VOLT_LOW_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &vol_low, 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &vol_low, 1, TRUE);
         if(ret == I2C_FAULT)
-          goto i2c_error;
+        	goto i2c_error;
     }while (ret == I2C_BUSY);
 
     /* BQ27200_VOLT_HIGH_REG */
     do{
         buf_wr = BQ27200_VOLT_HIGH_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &vol_high, 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &vol_high, 1, TRUE);
         if(ret == I2C_FAULT)
-          goto i2c_error;
+        	goto i2c_error;
     }while (ret == I2C_BUSY);    
     
     vol_mv = (INT16U) ((double)(vol_high << 8) + (double)(vol_low));   
@@ -356,14 +332,13 @@ INT08U  Bat_IsFuelGaugeBatCharging (void)
    /* BQ27200_FLAGS_REG */
     do{
         buf_wr = BQ27200_FLAGS_REG;
-        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, 
-                                &flags, 1, TRUE);
+        ret = I2C_WriteAndRead(I2C_0_HANDLE, BQ27200_I2C_ADDR, &buf_wr, 1, &flags, 1, TRUE);
         if(ret == I2C_FAULT)
-         return BAT_IS_CHARGING_ERROR;
+        	return BAT_IS_CHARGING_ERROR;
     }while (ret == I2C_BUSY);
     
-    if((flags>>7) == 1)       
-      return BAT_IS_CHARGING;
+    if((flags>>7) == 1)
+    	return BAT_IS_CHARGING;
     return BAT_IS_NOT_CHARGING;    
 }
 /*

@@ -67,8 +67,8 @@
 #define     TMR_A_MODE_BAT_CHARGER      0
 #define     TMR_A_MODE_TOUCHPAD         1
 
-#define ENABLE_CHRG_TONE                   /* {KW}: Comment this in release firmware builds       */
-#define CHK_DEFAULT_PARAMS                 /* {KW}: Comment this in release firmware builds       */
+//#define ENABLE_CHRG_TONE                   /* Comment this in release firmware builds */
+#define CHK_DEFAULT_PARAMS
 
 /*
 *********************************************************************************************************

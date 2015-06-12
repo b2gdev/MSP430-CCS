@@ -52,7 +52,7 @@
 *   EXTERNS
 *********************************************************************************************************
 */
-extern INT08U charger_activity;
+
 /*
 *********************************************************************************************************
 *   DEFAULT CONFIGURATION
@@ -78,7 +78,7 @@ extern INT08U charger_activity;
 #define BAT_TEMP_BAD                                0
 #define BAT_TEMP_GOOD                               1
 
-/*{KW}: charge termination current*/
+/* Charge termination current */
 #define BAT_CHG_TERM_CUR_50                         50
 #define BAT_CHG_TERM_CUR_100                        100
 #define BAT_CHG_TERM_CUR_150                        150
@@ -86,7 +86,7 @@ extern INT08U charger_activity;
 #define BAT_CHG_TERM_CUR_250                        250
 #define BAT_CHG_TERM_CUR_300                        300
 #define BAT_CHG_TERM_CUR_500                        500
-/*{KW}: end */
+/* End */
 
 /* BQ27200 I2C address */
 #define BQ27200_I2C_ADDR                            0x55            /* 7 bit I2C address            */

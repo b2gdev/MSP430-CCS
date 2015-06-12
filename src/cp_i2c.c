@@ -43,11 +43,7 @@
 *********************************************************************************************************
 */
 //{RD}
-#define I2C_TRIES 0x1000
 #define OWNADD 0x48
-//#define ENABLE_I2C_RECOVERY
-//#define ENABLE_I2C_ERROR_BEEPS
-
 /*
 *********************************************************************************************************
 *   LOCAL CONSTANTS
@@ -120,107 +116,95 @@ void  I2C_DeInit (void)
     
 }
 
+//I2C_BUSY state is currently not returned. It is defined to handle mustimaster collision aviodance
 INT08U  I2C_Write (INT08U handle, INT08U slave_addr, PTR_INT08U data, INT08U count)
 {
    if(I2C_wait_till_ready()) {    
-     //CP_SPI_SIMO_3V3_HIGH;                // {RD} I2C test
      return I2C_FAULT;
    }
 
    TmrA_IntDisable();
    if(count) {
      TI_USCI_I2C_transmitinit(slave_addr);            // initialize USCI
-          //CP_SPI_SIMO_3V3_HIGH;
+
      if(I2C_wait_till_ready())
        goto i2c_recovery;                             // wait for bus to be free
-          //CP_SPI_SIMO_3V3_LOW;
+
      TI_USCI_I2C_transmit(count, data);               // transmit 
    }
-   CP_SPI_SIMO_3V3_HIGH();
+
    I2C_wait_till_ready();                             // wait for bus to be free
-   CP_SPI_SIMO_3V3_LOW();
+
 i2c_recovery:   
    Sys_DelayMs(1);
    TmrA_IntEnable();
    
-   if(BQ24150A_No_Response_Reset_Cmd) {
-     return I2C_FAULT;
-   }
-   
    return I2C_SUCCESS;
 }
 
+//I2C_BUSY state is currently not returned. It is defined to handle mustimaster collision aviodance
 INT08U  I2C_Read (INT08U handle, INT08U slave_addr, PTR_INT08U data, INT08U count, BOOLEAN sync)
 {
    if(I2C_wait_till_ready()) {     
-     //CP_SPI_SIMO_3V3_HIGH;                // {RD} I2C test
      return I2C_FAULT;
    }
    
    TmrA_IntDisable();
    if(count) {
      TI_USCI_I2C_receiveinit(slave_addr);            // initialize USCI
-          //CP_SPI_SIMO_3V3_HIGH;
+
      if(I2C_wait_till_ready())
-       goto i2c_recovery;                             // wait for bus to be free
-          //CP_SPI_SIMO_3V3_LOW;
+       goto i2c_recovery;                            // wait for bus to be free
+
      TI_USCI_I2C_receive(count, data);               // receive 
    }
-   CP_SPI_SIMO_3V3_HIGH();
-   I2C_wait_till_ready();                             // wait for bus to be free
-   CP_SPI_SIMO_3V3_LOW();
+
+   I2C_wait_till_ready();                            // wait for bus to be free
+
 i2c_recovery:                             
    Sys_DelayMs(1);
    TmrA_IntEnable();
    
-   if(BQ24150A_No_Response_Reset_Cmd) {
-     return I2C_FAULT;
-   }
-   
    return I2C_SUCCESS;
 }
 
+//I2C_BUSY state is currently not returned. It is defined to handle mustimaster collision aviodance
 INT08U  I2C_WriteAndRead (INT08U handle, INT08U slave_addr, PTR_INT08U write_data, INT08U write_count, 
                           PTR_INT08U read_data, INT08U read_count, BOOLEAN sync)
 {
    if(I2C_wait_till_ready()) {     
-     //CP_SPI_SIMO_3V3_HIGH;                // {RD} I2C test
      return I2C_FAULT;
    }
 
    TmrA_IntDisable();
    if(write_count) {
      TI_USCI_I2C_transmitinit(slave_addr);            // initialize USCI
-     //CP_SPI_SIMO_3V3_HIGH;
+
     if(I2C_wait_till_ready())
        goto i2c_recovery;                             // wait for bus to be free
-         //CP_SPI_SIMO_3V3_LOW;
+
      TI_USCI_I2C_transmit(write_count, write_data);   // transmit      
    }
-   CP_SPI_SIMO_3V3_HIGH();
+
    if(I2C_wait_till_ready())
        goto i2c_recovery;                             // wait for bus to be free
-   CP_SPI_SIMO_3V3_LOW();
+
    Sys_DelayMs(1);
     
    if(read_count) {
      TI_USCI_I2C_receiveinit(slave_addr);             // initialize USCI
-          //CP_SPI_SIMO_3V3_HIGH;
+
      if(I2C_wait_till_ready())
        goto i2c_recovery;                             // wait for bus to be free
-          //CP_SPI_SIMO_3V3_LOW;
+
      TI_USCI_I2C_receive(read_count, read_data);      // receive 
    }
-   CP_SPI_SIMO_3V3_HIGH();
+
    I2C_wait_till_ready();                             // wait for bus to be free
-   CP_SPI_SIMO_3V3_LOW();
+
 i2c_recovery:   
    Sys_DelayMs(1);
    TmrA_IntEnable();
-   
-   if(BQ24150A_No_Response_Reset_Cmd) {
-     return I2C_FAULT;
-   }
    
    return I2C_SUCCESS;
 }
@@ -236,9 +220,8 @@ i2c_recovery:
 //------------------------------------------------------------------------------
 // void TI_USCI_I2C_slave_receiveinit()
 //
-// This function initializes the USCI module for master-receive operation. 
+// This function initializes the USCI module for slave-receive operation.
 //
-// IN:   unsigned char slave_address   =>  Slave Address
 //-----------------------------------------------------------------------------
 void TI_USCI_I2C_slave_receiveinit()
 {
@@ -246,19 +229,20 @@ void TI_USCI_I2C_slave_receiveinit()
     P3REN &= 0xF9;              /* Pullup/Pulldown disabled                                         */
 
     UCB0CTL1 = UCSWRST;                         /* Enable SW reset                                  */
-    UCB0CTL0  = (UCMODE_3 + UCSYNC);    /* I2C slave, synchronous mode                     */
-    UCB0I2COA   = OWNADD;          // Own Address & Respond to general call                           
+    UCB0CTL0  = (UCMODE_3 + UCSYNC);    		/* I2C slave, synchronous mode                      */
+    UCB0I2COA   = OWNADD;          				// Own Address & Respond to general call
     UCB0CTL1 &= ~UCSWRST;                       // Clear SW reset, resume operation
-    UCB0I2CIE = UCSTPIE|UCSTTIE; // Enable STP interrupts
+    UCB0I2CIE = UCSTPIE|UCSTTIE; 				// Enable STP interrupts
     UC0IE = UCB0RXIE|UCB0TXIE; 
 	byteCtr = 0 ;
-    __bis_SR_register(GIE);     /* Enable Global Interrupts                         */
+    __bis_SR_register(GIE);     				/* Enable Global Interrupts                         */
 }
 
 //------------------------------------------------------------------------------
 // void TI_USCI_I2C_receiveinit(unsigned char slave_address)
 //
-// This function initializes the USCI module for master-receive operation. 
+// This function initializes the USCI module for master-receive operation.
+// Multimsater mode is selected since both DM3730 ans MSP430 acts as masters on the link
 //
 // IN:   unsigned char slave_address   =>  Slave Address
 //-----------------------------------------------------------------------------
@@ -268,18 +252,17 @@ void TI_USCI_I2C_receiveinit(unsigned char slave_address)
     P3REN &= 0xF9;              /* Pullup/Pulldown disabled                                         */
 
     UCB0CTL1 = UCSWRST;                         /* Enable SW reset                                  */
-    // UCB0CTL0  = (UCMST + UCMODE_3 + UCSYNC);    /* I2C Master, synchronous mode                     */
-    UCB0CTL0  = (UCMST + UCMODE_3 + UCSYNC + UCMM);    /* I2C Master, multimaster, synchronous mode                     */
+    UCB0CTL0  = (UCMST + UCMODE_3 + UCSYNC + UCMM);    /* I2C Master, multimaster, synchronous mode */
     UCB0CTL1  = (UCSSEL_2 + UCSWRST);           /* Use SMCLK, keep SW reset                         */
     UCB0BR0   = 160;                            /* fSCL = SMCLK/160 = 16MHz/160 = ~100kHz           */
     UCB0BR1   = 0;  
                            
     UCB0I2CSA = slave_address;                  // Set slave address
-    UCB0I2COA   = UCGCEN + OWNADD;          // Own Address & Respond to general call
+    UCB0I2COA   = UCGCEN + OWNADD;          	// Own Address & Respond to general call
     UCB0CTL1 &= ~UCSWRST;                       // Clear SW reset, resume operation
-    UCB0I2CIE = UCNACKIE|UCALIE|UCSTPIE; // Enable AL & NACK interrupts
+    UCB0I2CIE = UCNACKIE|UCALIE|UCSTPIE; 		// Enable AL & NACK interrupts
     UC0IE = UCB0RXIE; 
-    __bis_SR_register(GIE);     /* Enable Global Interrupts                         */
+    __bis_SR_register(GIE);     				/* Enable Global Interrupts                         */
 }
 
 
@@ -287,7 +270,8 @@ void TI_USCI_I2C_receiveinit(unsigned char slave_address)
 //------------------------------------------------------------------------------
 // void TI_USCI_I2C_transmitinit(unsigned char slave_address)
 //
-// This function initializes the USCI module for master-transmit operation. 
+// This function initializes the USCI module for master-transmit operation.
+// Multimsater mode is selected since both DM3730 ans MSP430 acts as masters on the link
 //
 // IN:   unsigned char slave_address   =>  Slave Address
 //------------------------------------------------------------------------------
@@ -297,16 +281,15 @@ void TI_USCI_I2C_transmitinit(unsigned char slave_address)
     P3REN &= 0xF9;              /* Pullup/Pulldown disabled                                         */
 
     UCB0CTL1 = UCSWRST;                         /* Enable SW reset                                  */
-    // UCB0CTL0  = (UCMST + UCMODE_3 + UCSYNC);    /* I2C Master, synchronous mode                     */
-    UCB0CTL0  = (UCMST + UCMODE_3 + UCSYNC + UCMM);    /* I2C Master, multimaster, synchronous mode                     */
+    UCB0CTL0  = (UCMST + UCMODE_3 + UCSYNC + UCMM);    /* I2C Master, multimaster, synchronous mode */
     UCB0CTL1  = (UCSSEL_2 + UCSWRST);           /* Use SMCLK, keep SW reset                         */
     UCB0BR0   = 160;                            /* fSCL = SMCLK/160 = 16MHz/160 = ~100kHz           */
     UCB0BR1   = 0;  
                            
     UCB0I2CSA = slave_address;                  // Set slave address
-    UCB0I2COA   = UCGCEN + OWNADD;          // Own Address & Respond to general call
+    UCB0I2COA   = UCGCEN + OWNADD;          	// Own Address & Respond to general call
     UCB0CTL1 &= ~UCSWRST;                       // Clear SW reset, resume operation
-    UCB0I2CIE = UCNACKIE|UCALIE|UCSTPIE; // Enable AL & NACK interrupts
+    UCB0I2CIE = UCNACKIE|UCALIE|UCSTPIE; 		// Enable AL & NACK interrupts
     UC0IE = UCB0TXIE;   
     __bis_SR_register(GIE);                     /* Enable Global Interrupts                         */
 }
@@ -326,11 +309,9 @@ void TI_USCI_I2C_receive(unsigned char byteCount, unsigned char *field){
   if ( byteCount == 1 ){
     byteCtr = 0 ;
     __bic_SR_register(GIE);                   //__disable_interrupt();
-    //CP_SPI_SIMO_3V3_HIGH;                // {RD} I2C test
     UCB0CTL1 |= UCTXSTT;                      // I2C start condition
     while (UCB0CTL1 & UCTXSTT);               // Start condition sent?
     UCB0CTL1 |= UCTXSTP;                      // I2C stop condition
-    //CP_SPI_SIMO_3V3_LOW;                // {RD} I2C test
    __bis_SR_register(GIE);                    // __enable_interrupt();
   } 
   else if ( byteCount > 1 ) {
@@ -379,44 +360,15 @@ unsigned char TI_USCI_I2C_notready(){
 // OUT:  unsigned char  =>  0: I2C bus is idle, 
 //                          1: Timeout Error
 //------------------------------------------------------------------------------
-#ifdef ENABLE_I2C_RECOVERY
-unsigned char I2C_wait_till_ready(){
-  INT16U n;
-  for(n=0; n<I2C_TRIES; n++){
-    if(!TI_USCI_I2C_notready())
-      return 0;
-  }
-  BQ24150A_No_Response_Reset_Cmd = 1;
-  //CP_SPI_SIMO_3V3_HIGH;                // {RD} I2C test
-  I2C2_EN     = 0;
-    
-  /* I2C2_3V3_SDA */  
-    P3DIR_bit.P1   = 0;      /* Input                                                               */
-    P3SEL_bit.P1   = 0;      /* I/O function                                                        */
-    P3REN_bit.P1   = 0;      /* Pullup/Pulldown disabled                                            */
-    
-    /* I2C2_3V3_SCL */  
-    P3DIR_bit.P2   = 0;      /* Input                                                               */
-    P3SEL_bit.P2   = 0;      /* I/O function                                                        */
-    P3REN_bit.P2   = 0;      /* Pullup/Pulldown disabled                                            */
-
-    Sys_DelayMs(10);  
-  I2C_Init();
-  
-  return 1;
-}
-#else
 unsigned char I2C_wait_till_ready(){
   while(TI_USCI_I2C_notready()){
     if(Transaction_failed){
         Transaction_failed = 0;
-        BQ24150A_No_Response_Reset_Cmd = 1;
         return 1;
     }
   }
     return 0;
 }
-#endif
 
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
 #pragma vector=USCIAB0RX_VECTOR
@@ -425,38 +377,18 @@ __interrupt void  USCIAB0RX_ISR (void)
 void __attribute__ ((interrupt(USCIAB0RX_VECTOR))) USCIAB0RX_ISR (void)
 #endif
 {
-  if (UCB0STAT & UCNACKIFG){            // send STOP if slave sends NACK
+  if (UCB0STAT & UCNACKIFG){          // send STOP if slave sends NACK
     UCB0CTL1 |= UCTXSTP;
     UCB0STAT &= ~UCNACKIFG;
-    /*
-    Sys_BeepHigh(250);
-    Sys_DelayMs(200); 
-    Sys_BeepHigh(250);
-    */
-    //BQ24150A_No_Response_Reset_Cmd = 1;    
-  }else if (UCB0STAT & UCALIFG){     
-    //BQ24150A_No_Response_Reset_Cmd = 1;    
-     UCB0STAT &= ~UCALIFG;                                                              // Arbitration Lost 
+  }else if (UCB0STAT & UCALIFG){
+     UCB0STAT &= ~UCALIFG;            // Arbitration Lost
      TI_USCI_I2C_slave_receiveinit(); // Enable Stop interrupt
      //UCB0CTL1 = UCSWRST;
-     //CP_SPI_SIMO_3V3_HIGH;                // {RD} I2C test
-     Transaction_failed = 1;       // Device now in slave mode
-  }else if (UCB0STAT & UCSTPIFG){    
-#ifdef ENABLE_I2C_ERROR_BEEPS    
-    Sys_BeepHigh(20); 
-    Sys_DelayMs(200);
-    Sys_BeepHigh(20);
-    Sys_DelayMs(200);
-    Sys_BeepHigh(20);
-    Sys_DelayMs(200); 
-    Sys_BeepHigh(20);    
-    Sys_DelayMs(200); 
-    Sys_BeepHigh(20);
-#endif    
-    UCB0STAT &= ~UCSTPIFG;           // Reset Flag 
-    UCB0I2CIE  &= ~UCSTPIE;            // Disable Stop interrupt
-    //CP_SPI_SIMO_3V3_LOW;
-    //Transaction_failed = 0;       // Device now in slave mode
+     Transaction_failed = 1;       	  // Device now in slave mode
+  }else if (UCB0STAT & UCSTPIFG){
+    UCB0STAT &= ~UCSTPIFG;            // Reset Flag
+    UCB0I2CIE  &= ~UCSTPIE;           // Disable Stop interrupt
+    //Transaction_failed = 0;         // Device now in slave mode
   }else
 	UCB0STAT &= ~(UCSTPIFG + UCSTTIFG);
 }
@@ -469,17 +401,9 @@ void __attribute__ ((interrupt(USCIAB0TX_VECTOR))) USCIAB0TX_ISR (void)
 #endif
 {
   if (UCB0STAT & UCSTPIFG){
-#ifdef ENABLE_I2C_ERROR_BEEPS    
-    Sys_BeepHigh(20); 
-    Sys_DelayMs(200);
-    Sys_BeepHigh(20);
-    Sys_DelayMs(200);
-    Sys_BeepHigh(20);
-#endif
-    //CP_SPI_SIMO_3V3_LOW;
-    //Transaction_failed = 0;       // Device now in slave mode
+    //Transaction_failed = 0;        // Device now in slave mode
     UCB0STAT &= ~UCSTPIFG;           // Reset Flag 
-    UCB0I2CIE  &= ~UCSTPIE;            // Disable Stop interrupt
+    UCB0I2CIE  &= ~UCSTPIE;          // Disable Stop interrupt
   }
   if (IFG2 & UCB0RXIFG){
 	if ( UCB0CTL0 & UCMST) {

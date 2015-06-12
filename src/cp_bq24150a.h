@@ -139,12 +139,6 @@
 #define     BQ24150A_VI_TERM_1                      (0x01 << 1)
 #define     BQ24150A_VI_TERM_0                      (0x01 << 0)
 
-/*{KW}: charger activities */
-#define CHGR_OFF                            0
-#define CHGR_WENT_DEAD                      1
-#define CHGR_WENT_FULL                      2
-#define CHGR_ON                             3
-
 
 /*{KW}: charger registers default values */
 #define VOLT_REG_DEFAULT  0x0A
@@ -175,8 +169,8 @@
 */
 INT08U  BQ24150A_GetStatus (void);
 BOOLEAN  BQ24150A_ChargerInit (INT08U i_in_limit);
-BOOLEAN  BQ24150A_ChargerEnable (INT08U i_activity);
-BOOLEAN  BQ24150A_ChargerDisable (INT08U i_activity);
+BOOLEAN  BQ24150A_ChargerEnable ();
+BOOLEAN  BQ24150A_ChargerDisable ();
 INT08U BQ24150A_GetVoltageReg(void); //test
 INT08U  BQ24150A_GetCtrlReg (void) ;//test
 INT08U  BQ24150A_GetCurrentReg (void) ;//test

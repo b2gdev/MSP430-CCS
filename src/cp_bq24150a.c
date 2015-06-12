@@ -86,6 +86,7 @@
 *********************************************************************************************************
 *********************************************************************************************************
 */
+//Status register bits EN_STAT, STAT2, STAT1 (B5,B6,B7) are not properly read through I2C
 INT08U  BQ24150A_GetStatus (void)
 {
     INT08U ret    = 0;
@@ -103,7 +104,7 @@ INT08U  BQ24150A_GetStatus (void)
     return buf_rd; // (buf_rd & 0x30);
 }
 
-
+//Voltage register bits OTG_PL, VO(REG2) (B1,B4) are not properly read through I2C
 INT08U  BQ24150A_GetVoltageReg (void)   //test
 {
     INT08U ret    = 0;
@@ -121,6 +122,7 @@ INT08U  BQ24150A_GetVoltageReg (void)   //test
     return buf_rd; 
 }
 
+//Control register bit nCE, TE (B2,B3) is not properly read through I2C
 INT08U  BQ24150A_GetCtrlReg (void)   //test
 {
     INT08U ret    = 0;
@@ -138,6 +140,7 @@ INT08U  BQ24150A_GetCtrlReg (void)   //test
     return buf_rd; 
 }
 
+//Current register bits VI(CHRG0), VI(CHRG1), Reset (B4,B5,B7) are not properly read through I2C
 INT08U  BQ24150A_GetCurrentReg (void)   //test
 {
     INT08U ret    = 0;
@@ -169,7 +172,7 @@ BOOLEAN  BQ24150A_ChargerInit (INT08U i_in_limit)
                                         /* B3 (TE = 1)       - Enable Charge Current Termination    */
                                         /* B4 (VLOWV_1 = 1) - Set Weak Battery Threshold to 3.7V    */
                                         /* B5 (VLOWV_2 = 1) - Set Weak Battery Threshold to 3.7V    */
-    
+
     do{
         ret = I2C_Write (I2C_0_HANDLE, BQ24150A_I2C_ADDR, 
                          buf_wr, 2);                        /* Write Control Register               */
@@ -183,7 +186,7 @@ BOOLEAN  BQ24150A_ChargerInit (INT08U i_in_limit)
                                         /* B0 (OTG_EN = 0) - Disable OTG Pin                        */
                                         /* B1 (OTG_PL = 1) - OTG Polarity, Active Hight             */
                                         /* B2,B3,B4,B5,B6,B7 (Vo = 0,0,1,0,0,1) 
-                                                           - Battery Regulation Voltage = 4.22V      */
+                                                          - Battery Regulation Voltage = 4.22V      */
     
     do{
         ret = I2C_Write (I2C_0_HANDLE, BQ24150A_I2C_ADDR, 
@@ -210,13 +213,12 @@ i2c_error:
     return FALSE;
 }
 
-BOOLEAN  BQ24150A_ChargerEnable (INT08U i_activity)
+//Control register bit TE (B3) is not properly read through I2C
+BOOLEAN  BQ24150A_ChargerEnable ()
 {
     INT08U ret       = 0;
     INT08U buf_wr[2];
     INT08U buf_rd    = 0;
-    
-    charger_activity = i_activity; //{KW}
     
                                         /* ---------- Update Control Register --------------------- */
     buf_wr[0] = BQ24150A_CNTRL_REG;                         /* Control Register address             */
@@ -243,13 +245,12 @@ i2c_error:
     return FALSE;  
 }
 
-BOOLEAN  BQ24150A_ChargerDisable (INT08U i_activity)
+//Control register bit TE (B3) is not properly read through I2C
+BOOLEAN  BQ24150A_ChargerDisable ()
 {
     INT08U ret       = 0;
     INT08U buf_wr[2];
     INT08U buf_rd    = 0;
-    
-    charger_activity = i_activity;//{KW}
                                         /* ---------- Update Control Register --------------------- */
     buf_wr[0] = BQ24150A_CNTRL_REG;                         /* Control Register address             */
 
@@ -261,7 +262,7 @@ BOOLEAN  BQ24150A_ChargerDisable (INT08U i_activity)
     } while (ret == I2C_BUSY);
 
     
-    buf_wr[1] = buf_rd | BQ24150A_nCE;                      /* Disable charger                       */
+    buf_wr[1] = buf_rd | BQ24150A_nCE;                      /* Disable charger                      */
 
     do{
         ret = I2C_Write (I2C_0_HANDLE, BQ24150A_I2C_ADDR, 
@@ -291,11 +292,9 @@ BOOLEAN BQ24150A_is_default_params_det(void) //test
    
    if(test_buf[0] == VOLT_REG_DEFAULT || test_buf[1] == CTRL_REG_DEFAULT || test_buf[2] == CURR_REG_DEFAULT)
    {
-     //remove the beep
-     //Sys_BeepHigh(1000);  
-     Sys_DelayMs(200);
      ret = 1;
-   } 
+   }
+
    return ret;
 }
 
