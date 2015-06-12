@@ -7,3 +7,9 @@ Release__TI/
 #CCS Files
 .launches/
 targetConfigs/
+
+#sonar cube
+.sonar/
+reports/
+code_analyze.bat
+sonar-project.properties

@@ -74,7 +74,6 @@
 INT08U battery_level        = 0x00;
 
 BOOLEAN Pwr_Sw_On           = 0;
-BOOLEAN Pwr_Bat_Good        = 0;
 
 INT08U CC_Pwr_Status       	= 0;
 BOOLEAN is_pwr_status_gpio_stable = FALSE; 
@@ -164,26 +163,6 @@ int  main (void)
 				Sys_DelayMs(250);
 			}
 
-			/* Disable CP_BATPWR_nEN if battery is DEAD or SHORT_CCT */
-			if(Bat_GetInitialBatteryLevel() != BAT_LEVEL_WEAK)
-			{
-				CP_USBPWR_ENABLE();
-				CP_BATPWR_DISABLE();
-			}
-
-			Pwr_ChargerPowerEnable();
-			Sys_DelayMs(1);
-
-			while (Pwr_Bat_Good != 1){
-				/* wait until battery level is good */
-				// __low_power_mode_0();   /* Stay in LPM0   */
-				Sys_DelayMs(50);
-			}
-
-			CP_USBPWR_ENABLE();      			/* Enable Power supply 2 for companian processor            */
-		    CP_BATPWR_ENABLE();                 /* Enable Power supply 1 for companian processor            */
-
-			/* battery is good now, fall through to next case */
     	}
     	case BAT_LEVEL_GOOD:
     	case BAT_LEVEL_FULL:

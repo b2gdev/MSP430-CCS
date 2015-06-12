@@ -59,6 +59,7 @@
 #include "cp_battery.h"
 #include "cp_i2c.h"
 #include "cp_bq24150a.h"
+#include "cp_bq24160.h"
 #include "cp_timer_a.h"
 #include "cp_spi.h"
 #include "cp_command.h"

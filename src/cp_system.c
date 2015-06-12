@@ -314,7 +314,7 @@ void  Sys_BeepOn(void)
 }
 void  Sys_BeepOff(void) 
 {
-  BIT_CLR(P5SEL,P6);      /* I/O function  :ACLK */
+  BIT_CLR(P5SEL,P6);      /* I/O function  :GPIO */
   BIT_CLR(P5OUT,P6);      /* LOW - Beeper disabled */  
 }
 

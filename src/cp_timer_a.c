@@ -162,13 +162,118 @@ __interrupt void  TmrA_Isr (void)
 void __attribute__ ((interrupt(TIMERA0_VECTOR))) TmrA_Isr (void)
 #endif
 {
+	#ifdef USE_BQ24160
+	INT08U statCtrlReg;
+	INT08U batSplyStatReg;
+	INT08U NTCReg;
+	INT08U DPPMReg;
+	INT08U chgrStatus;
+	INT08U MINSYSMode;
+	INT08U VINDPMMode;
+	#else
+	INT08U bat_level = 0;
+	#endif /* USE_BQ24160 */
     INT08U buf_wr[2];
-    INT08U bat_level = 0;
     INT08U ret = 0;
     BOOLEAN bret;
 
     if (timer_a_divider == TMR_A_BAT_CHRG_DIVIDER){
         timer_a_divider = 0;
+
+#ifdef USE_BQ24160
+        /* #####################################################################
+		 *  Check for faults
+		 * ###################################################################*/
+        statCtrlReg = BQ24160_GetStatCtrlReg();
+        batSplyStatReg = BQ24160_GetBatStatReg();
+        NTCReg = BQ24160_GetTmrNTCReg();
+        if(NTCReg == 0){
+        	return;
+        }
+
+        bret = BQ24160_handle_faults(statCtrlReg,batSplyStatReg,NTCReg);
+        if(bret == FALSE){
+        	return;
+        }
+
+
+        /* #####################################################################
+		 *  Check for status
+		 * ###################################################################*/
+        chgrStatus = statCtrlReg & 0x70;
+        DPPMReg = BQ24160_GetDPPMReg();
+		MINSYSMode = DPPMReg & BQ24160_MINSYS_STATUS;
+		VINDPMMode = DPPMReg & BQ24160_DPM_STATUS;
+
+		if(chgrStatus == BQ24160_STAT_FAULT){
+			#ifdef ENABLE_CHRG_TONE
+			Sys_BeepHigh(100);
+			#endif
+
+			bret = BQ24160_ChargerInit(BQ24160_IUSB_LIMIT_NA);
+			if(bret == FALSE){
+				return;
+			}
+
+			bret = BQ24160_ChargerEnable(BQ24160_IUSB_LIMIT_NA);
+			if(bret == FALSE){
+				return;
+			}
+		}else if(chgrStatus == BQ24160_STAT_CHARGE_DONE){
+			#ifdef ENABLE_CHRG_TONE
+			Sys_BeepHigh(100);
+			Sys_DelayMs(200);
+			Sys_BeepHigh(100);
+			#endif
+		}else if(MINSYSMode){
+			#ifdef ENABLE_CHRG_TONE
+			Sys_BeepHigh(100);
+			Sys_DelayMs(200);
+			Sys_BeepHigh(100);
+			Sys_DelayMs(200);
+			Sys_BeepHigh(100);
+			#endif
+		}else if(VINDPMMode){
+			#ifdef ENABLE_CHRG_TONE
+			Sys_BeepHigh(100);
+			Sys_DelayMs(200);
+			Sys_BeepHigh(100);
+			Sys_DelayMs(200);
+			Sys_BeepHigh(100);
+			Sys_DelayMs(200);
+			Sys_BeepHigh(100);
+			#endif
+		}else{}
+
+		#ifdef CHK_DEFAULT_PARAMS
+        if(BQ24160_is_default_params_det()){
+			bret = BQ24160_ChargerInit(BQ24160_IUSB_LIMIT_NA);
+			if(bret == FALSE){
+				return;
+			}
+
+			bret = BQ24160_ChargerEnable(BQ24160_IUSB_LIMIT_NA);
+			if(bret == FALSE){
+				return;
+			}
+        }
+		#endif
+
+
+        /* #####################################################################
+		 *  Watchdog timer reset
+		 * ###################################################################*/
+		buf_wr[0] = BQ24160_SAT_CNTRL_REG;
+		buf_wr[1] = BQ24160_TMR_RST + BQ24160_SUPPLY_SEL;
+   	   							/* B3 (SUPPLY_SEL = 1) - USB has precedence when both supplies are connected    */
+		do{
+			ret = I2C_Write (I2C_0_HANDLE, BQ24150A_I2C_ADDR, buf_wr, 2);
+			if(ret == I2C_FAULT){
+				return;
+			}
+		}while (ret == I2C_BUSY);
+
+#else /* if bq24150a */
 
         /* #####################################################################
          * Get Charger Status
@@ -245,7 +350,7 @@ void __attribute__ ((interrupt(TIMERA0_VECTOR))) TmrA_Isr (void)
         /* #####################################################################
          *  32sec timer reset
          * ###################################################################*/
-        buf_wr[0] = BQ24150A_SAT_CNTRL_REG;                               /* Control Register address         */
+        buf_wr[0] = BQ24150A_SAT_CNTRL_REG;                               /* Status Register address         */
         buf_wr[1] = BQ24150A_TMR_RST_OTG + BQ24150A_EN_STAT;			  // Status register bits B6 - EN_STAT, (B5,B4) - Charge status bits are not properly maintained
         do{
             ret = I2C_Write (I2C_0_HANDLE, BQ24150A_I2C_ADDR, buf_wr, 2);
@@ -253,7 +358,7 @@ void __attribute__ ((interrupt(TIMERA0_VECTOR))) TmrA_Isr (void)
             	return;
             }
         }while (ret == I2C_BUSY);
-        
+
 
        /* ######################################################################
         *   Read battery level
@@ -274,8 +379,6 @@ void __attribute__ ((interrupt(TIMERA0_VECTOR))) TmrA_Isr (void)
     	   Sys_DelayMs(200);
     	   Sys_BeepHigh(50);
 		   #endif
-            
-           Pwr_Bat_Good = 0;
 
            bret =BQ24150A_ChargerEnable();
 		   if(bret == FALSE){
@@ -292,8 +395,6 @@ void __attribute__ ((interrupt(TIMERA0_VECTOR))) TmrA_Isr (void)
     	   Sys_BeepHigh(50);
 		   #endif
 
-    	   Pwr_Bat_Good = 0;
-
     	   bret =BQ24150A_ChargerEnable();
 		   if(bret == FALSE){
 			   return;
@@ -307,29 +408,24 @@ void __attribute__ ((interrupt(TIMERA0_VECTOR))) TmrA_Isr (void)
     	   Sys_BeepHigh(50);
 		   #endif
 
-    	   Pwr_Bat_Good = 0;
-
     	   bret =BQ24150A_ChargerEnable();
 		   if(bret == FALSE){
 			   return;
 		   }
 	   }
        else if(BAT_LEVEL_GOOD == bat_level){
-    	   Pwr_Bat_Good = 1;
-
     	   bret =BQ24150A_ChargerEnable();
     	   if(bret == FALSE){
     		   return;
     	   }
 	   }
        else if(BAT_LEVEL_FULL == bat_level){
-    	   Pwr_Bat_Good = 1;
-
 			bret = BQ24150A_ChargerDisable();	/* If the battery level is FULL threshold then disable charging */
 			if(bret == FALSE){
 				return;
 			}
        }else{}
+#endif /* USE_BQ24160 */
     }
     else{
         timer_a_divider++;

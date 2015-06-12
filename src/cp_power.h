@@ -90,7 +90,6 @@
 *********************************************************************************************************
 */
 extern BOOLEAN Pwr_Sw_On;
-extern BOOLEAN Pwr_Bat_Good; 
 extern INT08U CC_Pwr_Status; 
 
 /*
