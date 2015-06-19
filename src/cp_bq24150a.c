@@ -158,6 +158,31 @@ INT08U  BQ24150A_GetCurrentReg (void)   //test
     return buf_rd; 
 }
 
+// Charger De-Init function put the charger IC to Hi-Z mode. I2C not active after that
+BOOLEAN  BQ24150A_ChargerDeInit (void)
+{
+    INT08U ret = 0;
+    INT08U buf_wr[2];
+
+                                        /* ---------- Update Control Register --------------------- */
+    buf_wr[0] = BQ24150A_CNTRL_REG;                         /* Control Register address             */
+    buf_wr[1] = BQ24150A_HZ_MODE + BQ24150A_nCE + BQ24150A_TE;
+                                        /* B0 (OPA_MODE = 0) - Set Mode to Charger                  */
+                                        /* B1 (HZ_MODE = 1)  - High Impedance Mode                  */
+                                        /* B2 (nCE = 1)      - Disable Charger                      */
+                                        /* B3 (TE = 1)       - Enable Charge Current Termination    */
+
+    do{
+        ret = I2C_Write (I2C_0_HANDLE, BQ24150A_I2C_ADDR, buf_wr, 2);
+        if(ret == I2C_FAULT)
+          goto i2c_error;
+    } while(ret == I2C_BUSY);
+
+    return TRUE;
+i2c_error:
+    return FALSE;
+}
+
 BOOLEAN  BQ24150A_ChargerInit (INT08U i_in_limit)
 {
     INT08U ret = 0;

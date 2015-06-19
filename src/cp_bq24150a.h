@@ -168,6 +168,7 @@
 *********************************************************************************************************
 */
 INT08U  BQ24150A_GetStatus (void);
+BOOLEAN  BQ24150A_ChargerDeInit (void);
 BOOLEAN  BQ24150A_ChargerInit (INT08U i_in_limit);
 BOOLEAN  BQ24150A_ChargerEnable ();
 BOOLEAN  BQ24150A_ChargerDisable ();

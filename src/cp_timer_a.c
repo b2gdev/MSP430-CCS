@@ -45,7 +45,7 @@
 */
 //#define     TMR_A_DEBUG
 #define     TMR_A_BAT_CHRG_CCR0         0xFFFF
-#define     TMR_A_BAT_CHRG_DIVIDER      305
+#define     TMR_A_BAT_CHRG_DIVIDER      0
                                             /* Battery Charger Timer Period - 10 sec                */
                                             /* Clock Input - 16 MHz                                 */
                                             /* Input Divider - 8                                    */
@@ -75,7 +75,7 @@
 *********************************************************************************************************
 */
 INT08U timer_a_mode;
-INT16U timer_a_divider;
+INT16U timer_a_divider = 0;
 
 /*
 *********************************************************************************************************
@@ -117,10 +117,10 @@ void  TmrA_Init (INT08U mode)
 
         TACCR0  = TMR_A_BAT_CHRG_CCR0;  /* TACCRx       : Compare mode Timer value                  */
 
-        TACTL   = TASSEL_2 + ID_3 + MC_1;
+        TACTL   = TASSEL_1 + ID_0 + MC_1;
                                 /* Unused       : 000000                                            */
-                                /* TASSELx      : 10     - Clock source - SMCLK                     */
-                                /* IDx          : 11     - Input divider - 8                        */
+                                /* TASSELx      : 01     - Clock source - ACLK                      */
+                                /* IDx          : 00     - Input divider - 1                        */
                                 /* MCx          : 01     - Mode control - Up mode                   */
                                 /* Unused       : 0                                                 */
                                 /* TACLR        : 0      - Timer Clear - Not cleared                */
@@ -309,7 +309,6 @@ void __attribute__ ((interrupt(TIMERA0_VECTOR))) TmrA_Isr (void)
 				Sys_DelayMs(200);
 				Sys_BeepHigh(20);
 				#endif
-				// __low_power_mode_off_on_exit();     /* Exit LPM0                                */
 				break;
 			}
 			case BQ24150A_STAT_CHARGE_DONE:

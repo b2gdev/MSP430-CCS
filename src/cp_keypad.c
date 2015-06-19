@@ -69,7 +69,6 @@
 *   LOCAL VARIABLES
 *********************************************************************************************************
 */
-BOOLEAN is_power_switch_on;
 BOOLEAN power_switch_toggle = 0;
 BOOLEAN power_off_pressed = 0;
 BOOLEAN power_reset_pressed = 0;
@@ -190,10 +189,8 @@ void  Kpd_ReadEx (void)
     INT08U j = 0;
     INT08U match_count = 0;
     
-    INT32U prev_main_keys = 0;   
-    
-    MainKeys = (PWR_SW) ? (MainKeys | PWR_KEY_BIT) : (MainKeys & (~(PWR_KEY_BIT)));
-    
+    INT32U prev_main_keys = 0;
+
     if (is_power_switch_on && !(Pwr_Get_CC_Pwr_Status()==CC_PWR_OFF)){
       MainKeys = (BR_KEY1) ? (MainKeys | BR_KEY1_BIT) : (MainKeys & (~(BR_KEY1_BIT)));
       MainKeys = (BR_KEY2) ? (MainKeys | BR_KEY2_BIT) : (MainKeys & (~(BR_KEY2_BIT)));
@@ -255,33 +252,11 @@ void  Kpd_ReadEx (void)
                 prev_main_keys  = KEYPAD_MainKeys;
                 KEYPAD_MainKeys = KEYPAD_MainKeys_Buf[i];                  
                 
-                if ((KEYPAD_MainKeys & 0xFFFFFFFF) != (prev_main_keys & 0xFFFFFFFF)) {  
-                  
-                    /*{KW}:: power switch handling */
-                    if ((KEYPAD_MainKeys & PWR_KEY_BIT) != (prev_main_keys & PWR_KEY_BIT)){  
-                      
-                      is_power_switch_on = (KEYPAD_MainKeys & PWR_KEY_BIT) ? 1 : 0;   
-                      
-                      /*{KW}: Need to update Brl Display status on power key change */
-                      Brd_Pwr_Update(Pwr_Get_CC_Pwr_Status());
-                      
-                      if (is_power_switch_on && (power_switch_toggle == 0) && ((Pwr_Get_CC_Pwr_Status() == CC_PWR_MIDDLE) || (Pwr_Get_CC_Pwr_Status() == CC_PWR_SUSPEND) || (Pwr_Get_CC_Pwr_Status() == CC_PWR_OFF))){
-                        CC_CP_PWRON_HIGH();
-                        time_stamp_start = Sys_Get_Heartbeat();
-                        power_switch_toggle = 1;
-                        if(Pwr_Get_CC_Pwr_Status() == CC_PWR_OFF)
-                          Sys_BeepOn(); //{RD} Power switch toggle indicator beep ON
-                      }                      
-                      else if (!is_power_switch_on && (power_switch_toggle == 0) && ((Pwr_Get_CC_Pwr_Status() == CC_PWR_ACTIVE))){
-                        CC_CP_PWRON_HIGH();
-                        time_stamp_start = Sys_Get_Heartbeat();
-                        power_switch_toggle = 1; 
-                      }
-                    }
+                if ((KEYPAD_MainKeys & 0xFFFFFFFF) != (prev_main_keys & 0xFFFFFFFF)) {
                     
                     /*{KW}:: test long power button press */
                     #ifdef PWR_OFF_KEY_COMBINATION_DEFINED /*{KW}: define a proper pwr off combination */
-                    if (((MainKeys & PWR_SHUTDOWN_COMB) == PWR_SHUTDOWN_COMB) && ((KEYPAD_MainKeys & PWR_SHUTDOWN_COMB) != (prev_main_keys & PWR_SHUTDOWN_COMB))) {
+                    if (((KEYPAD_MainKeys & PWR_SHUTDOWN_COMB) == PWR_SHUTDOWN_COMB) && ((KEYPAD_MainKeys & PWR_SHUTDOWN_COMB) != (prev_main_keys & PWR_SHUTDOWN_COMB))) {
                        if((power_off_pressed == 0) && (Pwr_Get_CC_Pwr_Status() != CC_PWR_OFF))
                        {
                          CC_CP_PWRON_HIGH();
@@ -293,7 +268,7 @@ void  Kpd_ReadEx (void)
                     
                     /*{KW}:: test 8s reset power button press */
                     #ifdef PWR_RESET_KEY_COMBINATION_DEFINED /*{KW}: define a proper pwr off combination */
-                    if (((MainKeys & PWR_RESET_COMB) == PWR_RESET_COMB) && ((KEYPAD_MainKeys & PWR_RESET_COMB) != (prev_main_keys & PWR_RESET_COMB))) {
+                    if (((KEYPAD_MainKeys & PWR_RESET_COMB) == PWR_RESET_COMB) && ((KEYPAD_MainKeys & PWR_RESET_COMB) != (prev_main_keys & PWR_RESET_COMB))) {
                        if((power_reset_pressed == 0) && (Pwr_Get_CC_Pwr_Status() != CC_PWR_OFF))
                        {
                          CC_CP_PWRON_HIGH();
@@ -304,14 +279,14 @@ void  Kpd_ReadEx (void)
                     #endif
                     
                     #ifdef PWR_OFF_KEY_COMBINATION_DEFINED
-                    if (!((KEYPAD_MainKeys & PWR_KEY_BIT) != (prev_main_keys & PWR_KEY_BIT)) && 
-                        !(((KEYPAD_MainKeys & PWR_SHUTDOWN_COMB) != (prev_main_keys & PWR_SHUTDOWN_COMB)) && (((MainKeys & PWR_SHUTDOWN_COMB) == PWR_SHUTDOWN_COMB))) &&
-                        !(((KEYPAD_MainKeys & PWR_RESET_COMB) != (prev_main_keys & PWR_RESET_COMB)) && (((MainKeys & PWR_RESET_COMB) == PWR_RESET_COMB)))  ){/*{KW}: do not send keypad change interrupt for power key and pwr off combination */
-                    #else
-                    if (!((KEYPAD_MainKeys & PWR_KEY_BIT) != (prev_main_keys & PWR_KEY_BIT))){/*{KW}:: do not send keypad change interrupt for power key */
-                    #endif                      
-                      KEYPAD_KeyChange = TRUE;  
+                    if (((KEYPAD_MainKeys & PWR_KEY_BIT) != (prev_main_keys & PWR_KEY_BIT)) ||
+                    	(((KEYPAD_MainKeys & PWR_SHUTDOWN_COMB) != (prev_main_keys & PWR_SHUTDOWN_COMB)) && ((KEYPAD_MainKeys & PWR_SHUTDOWN_COMB) == PWR_SHUTDOWN_COMB)) ||
+                        (((KEYPAD_MainKeys & PWR_RESET_COMB) != (prev_main_keys & PWR_RESET_COMB)) && ((KEYPAD_MainKeys & PWR_RESET_COMB) == PWR_RESET_COMB))  ){/*{KW}: do not send keypad change interrupt for power key and pwr off combination */
+                    	KEYPAD_KeyChange = FALSE;
+                    }else{
+                    	KEYPAD_KeyChange = TRUE;
                     }
+					#endif
 		    break;
                 }               
             } 

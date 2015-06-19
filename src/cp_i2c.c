@@ -99,6 +99,7 @@ INT08U Transaction_failed = 0;
 void  I2C_Init (void)
 {
     /* I2C Module 0 *********************************************************************************/
+	I2C2_ENABLE();
     
     /* Initialize I2C pins */
     P3SEL |= 0x06;              /* I2C function                                                     */
@@ -111,8 +112,22 @@ void  I2C_Init (void)
     UCB0BR1   = 0;                              /*                                                  */   
 }
 
+// I2C De-Init put the I2C pins back to normal GPIO. I2C not active.
 void  I2C_DeInit (void)
 {
+	/* I2C2_3V3_SDA */
+	BIT_SET(P3DIR,P1);      /* Output                                                              */
+	BIT_CLR(P3SEL,P1);      /* I/O function                                                        */
+	BIT_CLR(P3REN,P1);     	/* Pullup/Pulldown disabled                                            */
+	BIT_SET(P3OUT,P1);      /* HIGH                                                                */
+
+	/* I2C2_3V3_SCL */
+	BIT_SET(P3DIR,P2);      /* Output                                                              */
+	BIT_CLR(P3SEL,P2);      /* I/O function                                                        */
+	BIT_CLR(P3REN,P2);      /* Pullup/Pulldown disabled                                            */
+	BIT_SET(P3OUT,P2);      /* HIGH                                                                */
+
+	I2C2_DISABLE();
     
 }
 
@@ -225,6 +240,8 @@ i2c_recovery:
 //-----------------------------------------------------------------------------
 void TI_USCI_I2C_slave_receiveinit()
 {
+	I2C2_ENABLE();
+
     P3SEL |= 0x06;              /* I2C function                                                     */
     P3REN &= 0xF9;              /* Pullup/Pulldown disabled                                         */
 
@@ -248,6 +265,8 @@ void TI_USCI_I2C_slave_receiveinit()
 //-----------------------------------------------------------------------------
 void TI_USCI_I2C_receiveinit(unsigned char slave_address)
 {
+	I2C2_ENABLE();
+
     P3SEL |= 0x06;              /* I2C function                                                     */
     P3REN &= 0xF9;              /* Pullup/Pulldown disabled                                         */
 
@@ -277,6 +296,8 @@ void TI_USCI_I2C_receiveinit(unsigned char slave_address)
 //------------------------------------------------------------------------------
 void TI_USCI_I2C_transmitinit(unsigned char slave_address)
 {
+	I2C2_ENABLE();
+
     P3SEL |= 0x06;              /* I2C function                                                     */
     P3REN &= 0xF9;              /* Pullup/Pulldown disabled                                         */
 

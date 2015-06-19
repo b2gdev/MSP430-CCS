@@ -158,7 +158,10 @@ void __attribute__ ((interrupt(TIMERB0_VECTOR))) TmrB_Isr (void)
         
         Brd_ReadKeys(NULL);
         
-        __low_power_mode_off_on_exit();     /* Exit LPM0                                            */
+        if(is_power_switch_on && (Pwr_Get_CC_Pwr_Status() == CC_PWR_SUSPEND) && (KEYPAD_KeyChange == TRUE)){
+        	__low_power_mode_off_on_exit(); /* Exit LPM                                            */
+        }else{}
+
     }
     else{
         timer_b_divider++;

@@ -129,6 +129,15 @@ void  SPI_Init (void)
     Cbuf_Init(&SPI_1_TransmitBuffer, spi_1_tx_buf, SPI_1_TX_BUF_SIZE);    
 }
 
+// SPI De-Init put the some SPI pins back to normal GPIO. Other SPI pins are handled by Sys_ShutDownLPInit
+void SPI_DeInit(void){
+	/* MCSPI1_SOMI_3V3 */
+	BIT_SET(P3DIR,P7);      /* Output                                                              */
+	BIT_CLR(P3SEL,P7);      /* I/O function                                                        */
+	BIT_CLR(P3REN,P7);      /* Pullup/Pulldown disabled                                            */
+	BIT_CLR(P3OUT,P7);      /* LOW                                                                 */
+}
+
 /*
 *********************************************************************************************************
 *********************************************************************************************************
@@ -145,7 +154,7 @@ void __attribute__ ((interrupt(USCIAB1RX_VECTOR))) SPI_RxIsr (void)
 {
     if (UC1IFG & UCA1RXIFG){
         Cbuf_Write(&SPI_1_ReceiveBuffer, UCA1RXBUF);
-        __low_power_mode_off_on_exit();     /* Exit LPM0                                            */
+        __low_power_mode_off_on_exit();
     }
 }
 
@@ -166,5 +175,6 @@ void __attribute__ ((interrupt(USCIAB1TX_VECTOR))) SPI_TxIsr (void)
         else{
             SPI_1_TX_INT_DISABLE();
         }
+        __low_power_mode_off_on_exit();
     }
 }

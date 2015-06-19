@@ -53,6 +53,7 @@
 *********************************************************************************************************
 */
 extern INT32U TmrB_heartbeat;
+
 /*
 *********************************************************************************************************
 *   DEFAULT CONFIGURATION
@@ -89,6 +90,7 @@ extern INT32U TmrB_heartbeat;
 // #define CP_SOFT_RST          P5OUT_bit.P6            /* P5.6         */
 
 #define EN_1V8_3V3_LVL_TR()     BIT_CLR(P8OUT,P5)       /* P8.5 = 0     */
+#define DIS_1V8_3V3_LVL_TR()    BIT_SET(P8OUT,P5)       /* P8.5 = 1     */
 #define I2C2_3V3_SDA            (P3IN & P1)             /* P3.1         */
 #define I2C2_3V3_SCL            (P3IN & P2)             /* P3.2         */
 #define I2C2_ENABLE()           BIT_SET(P5OUT,P5)       /* P5.5 = 1     */
@@ -140,6 +142,8 @@ extern INT32U TmrB_heartbeat;
 */
 void  Sys_GpioInit (void);
 void  Sys_GpioDeInit (void);
+void Sys_ShutDownLPInit(void);
+void Sys_ShutDownLPDeInit(void);
 INT16U  Sys_GetSystemCurrent_mA (void);
 
 void  Sys_DelayMs (INT16U count);

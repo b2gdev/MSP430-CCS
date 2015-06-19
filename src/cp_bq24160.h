@@ -230,6 +230,7 @@ INT08U   BQ24160_GetCurrentReg (void);
 INT08U   BQ24160_GetDPPMReg (void);
 INT08U   BQ24160_GetTmrNTCReg (void);
 BOOLEAN  BQ24160_ChargerInit (INT08U i_in_limit);
+BOOLEAN  BQ24160_ChargerDeInit (void);
 BOOLEAN  BQ24160_ChargerEnable (INT08U i_in_limit);
 BOOLEAN  BQ24160_ChargerDisable (INT08U i_in_limit);
 BOOLEAN  BQ24160_is_default_params_det(void);

@@ -89,7 +89,7 @@
 *   GLOBAL VARIABLES
 *********************************************************************************************************
 */
-extern BOOLEAN Pwr_Sw_On;
+extern BOOLEAN is_power_switch_on;
 extern INT08U CC_Pwr_Status; 
 
 /*

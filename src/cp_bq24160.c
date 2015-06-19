@@ -198,6 +198,30 @@ INT08U  BQ24160_GetTmrNTCReg (void)
     return buf_rd;
 }
 
+// Charger De-Init function put the charger IC to Hi-Z mode. I2C not active after that
+BOOLEAN  BQ24160_ChargerDeInit (void)
+{
+    INT08U ret = 0;
+    INT08U buf_wr[2];
+
+                                        /* ---------- Update Control Register --------------------- */
+    buf_wr[0] = BQ24160_CNTRL_REG;                          /* Control Register address             */
+    buf_wr[1] = BQ24160_EN_STAT + BQ24160_TE + BQ24160_nCE + BQ24160_HZ_MODE;
+                                        /* B0 (HZ_MODE = 1)  - High Impedance Mode                  */
+                                        /* B1 (nCE = 1)      - Disable Charger                      */
+                                        /* B2 (TE = 1)       - Enable Charge Current Termination    */
+                                        /* B3 (EN_STAT = 1)  - Enable STAT output 					*/
+    do{
+        ret = I2C_Write (I2C_0_HANDLE, BQ24160_I2C_ADDR, buf_wr, 2);
+        if(ret == I2C_FAULT)
+        	goto i2c_error;
+    } while(ret == I2C_BUSY);
+
+    return TRUE;
+i2c_error:
+    return FALSE;
+}
+
 BOOLEAN  BQ24160_ChargerInit (INT08U i_in_limit)
 {
     INT08U ret = 0;
@@ -369,7 +393,7 @@ BOOLEAN BQ24160_handle_faults(INT08U StatCtrlReg, INT08U BatSplyStatReg, INT08U 
    BOOLEAN ret;
 
    	   	   	   	   	   	   	   	   	   	   /* If a timer fault occurs re-init charger and give two small beeps */
-   	   	   	   	   	   	   	   	   	   	   /* Do not re-init charger for safety timer expiration. Avoid continuous charging of defective battery */
+   	   	 /* Do not re-init charger for safety timer expiration. Avoid continuous charging of defective battery */
    if(StatRegFaults == BQ24160_FAULT_WATCHDOG_EXP)
    {
 	   #ifdef ENABLE_CHRG_TONE

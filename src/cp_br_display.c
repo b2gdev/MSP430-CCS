@@ -71,7 +71,6 @@
 */
 static INT08U   brd_disp_buf[BRD_DISP_BUF_SIZE];            /* Local Braille display buffer         */
 static INT08U   brd_key_buf[BRD_KEY_BUF_SIZE];              /* Local Key buffer                     */   
-extern BOOLEAN is_power_switch_on;
 
 /*
 *********************************************************************************************************

@@ -359,7 +359,7 @@ void  Cmd_RxCommandProcess (void)
                                     
                                     Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
                                     active_tx_checksum+= 0x00;
-                                    
+
                                     break;
                                 }
                                 /*{KW}:: end */

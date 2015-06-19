@@ -73,15 +73,14 @@
 */
 INT08U battery_level        = 0x00;
 
-BOOLEAN Pwr_Sw_On           = 0;
+BOOLEAN is_power_switch_on  = 0;
 
 INT08U CC_Pwr_Status       	= 0;
-BOOLEAN is_pwr_status_gpio_stable = FALSE; 
+BOOLEAN is_pwr_status_gpio_stable = FALSE;
+
 
 /* Used for TPS pwr pin toggle */
 INT32U time_stamp_start = 0xffffffff;
-
-extern BOOLEAN is_power_switch_on;
 
 /*
 *********************************************************************************************************
@@ -116,26 +115,30 @@ int  main (void)
     INT08U brl_disp_str[24] = {0,0,0,0,0,1,0,0,0,0,17,69,0,0,0,0,231,205,128,0,0,0,250,90}; //Booting mesg: "Starting"
 
     WDTCTL = WDTPW + WDTHOLD;           /* Stop watchdog timer to prevent time out reset            */
-    
+
     Sys_GpioInit();                     /* Initialize GPIO                                          */
-    
+
     CP_BATPWR_ENABLE();                 /* Enable Power supply 1 for companian processor            */
     CP_USBPWR_ENABLE();                 /* Enable Power supply 2 for companian processor            */
 
-    Pwr_SystemPowerDisable();           /* Disable system power                                     */    
+    Pwr_SystemPowerDisable();           /* Disable system power                                     */
+
+    Pwr_CC_Pwr_Status_Update(CC_PWR_OFF); //Initialize to power offf status.
+	Sys_Set_System_Status(FALSE);
+	is_pwr_status_gpio_stable = FALSE;
     
     CP_USBOTG_S_TPS();                 	/* USB switch connected to TPS65950                         */
     I2C2_ENABLE();
     
     Clk_DCOInit();                      /* Initialize DCO                                           */
-    ADC12_Init();                       /* Initialize ADC12                                         */    
+
+    ADC12_Init();                       /* Initialize ADC12                                         */
     #ifdef CHK_PRG_RESET
-    Clk_ACLK_div(ACLK_DIV_4); 
+    Clk_ACLK_div(ACLK_DIV_4);			/* ACLK divide                                              */
     Sys_BeepHigh(1000);                 /* High frequency beep, for debug purposes                  */
     #endif
-    Clk_ACLK_div(ACLK_DIV_8);           /* ACLK divide                                              */ 
-    
-    TmrA_Init(TMR_A_MODE_BAT_CHARGER);
+
+	TmrA_Init(TMR_A_MODE_BAT_CHARGER);
 
     #ifdef ENABLE_BATTERY
 	Sys_DelayMs(500);
@@ -159,7 +162,7 @@ int  main (void)
 
 			/* Wait until chrger detected */
 			while (!CP_VBUS_OTG_DET){
-				//  __low_power_mode_0();   /* Stay in LPM0   */
+				 __low_power_mode_4();			/* Stay at LMP4 and awake when charger is plugged           */
 				Sys_DelayMs(250);
 			}
 
@@ -179,6 +182,9 @@ int  main (void)
 
 			is_power_switch_on = PWR_SW; 		/* Initial status of the power switch              			*/
 
+			Pwr_SystemPowerEnable();			/* This will power on the main processor.Place this after
+												   switch transition										*/
+
 			CP_PWR01_ENABLE();             		/* Enable Braille display                        			*/
 
 			#ifdef  ENABLE_KEYPAD
@@ -194,10 +200,6 @@ int  main (void)
 			#ifdef ENABLE_HOST_INTERFACE
 			EN_1V8_3V3_LVL_TR();     			/* Enable 1.8V to 3.3V translator 							*/
 			Sys_DelayMs(1000);
-			Pwr_SystemPowerEnable();
-			Pwr_CC_Pwr_Status_Update(CC_PWR_OFF); //Initialize to power offf status. This will be updated when the CC pwr GPIO is stable
-			Sys_Set_System_Status(FALSE);
-			is_pwr_status_gpio_stable = FALSE;
 			#endif
 			break;
 		}
@@ -205,7 +207,8 @@ int  main (void)
 		{
 			break;
 		}
-    }/* end of switch case */    
+    }/* end of switch case */
+
     
     while (1)
     {
@@ -218,6 +221,13 @@ int  main (void)
     				Cmd_TxCommandProcess();
     			}else{}
 			  	#endif
+    											/* Go LMP at suspend state depending on the power switch    */
+    			if(Pwr_Get_CC_Pwr_Status() == CC_PWR_SUSPEND){
+    				if(PWR_SW)
+    					__low_power_mode_1();
+    				else
+    					__low_power_mode_3();
+    			}else{}
     		}
     		else{
     			/* Init Brd asap */
@@ -243,6 +253,21 @@ int  main (void)
     	  if(Sys_Get_System_Status() == TRUE){
     		  Pwr_CC_Pwr_Status_Update(CC_PWR_OFF);
     		  Sys_Set_System_Status(FALSE);
+    		  if(!power_reset_pressed){			/* De-Init pheriperals before going to LMP at shutdown		*/
+				  ADC12_DeInit();				/* to reduce power consumption								*/
+				  SPI_DeInit();
+				  I2C_DeInit();
+				  Sys_ShutDownLPInit();
+				  if(CP_VBUS_OTG_DET){
+					  ADC12_Init();
+					  __low_power_mode_3();		/* Stay at LMP3 to support chrging when charger is plugged  */
+				  }
+				  else{
+					  __low_power_mode_4();
+					  ADC12_Init();
+				  }
+				  Sys_ShutDownLPDeInit();		/* Take the pins back to their assigned states. SPI and I2C */
+			  }else{}							/* re-inits are done at neceassary places				    */
     	  }
     	  else{
     		  debounce_cnt = 0;
