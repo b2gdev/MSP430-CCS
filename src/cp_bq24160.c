@@ -276,9 +276,9 @@ BOOLEAN  BQ24160_ChargerInit (INT08U i_in_limit)
 
                                         /* ------ Update Bat Term/Fast Charge Current Register ---- */
     buf_wr[0] = BQ24160_BAT_TERM_F_CHRG_CUR_REG;
-    buf_wr[1] = BQ24160_I_CHRG_4 + BQ24160_I_CHRG_3 + BQ24160_I_CHRG_0 + BQ24160_I_TERM_2 + BQ24160_I_TERM_0;
+    buf_wr[1] = BQ24160_I_CHRG_4 + BQ24160_I_CHRG_1 + BQ24160_I_CHRG_0 + BQ24160_I_TERM_2 + BQ24160_I_TERM_0;
                                         /* B2,B1,B0 (1,0,1) - Term Current Sense Voltage  - 300mA   */
-                                        /* B7,B6,B5,B4,B3 (1,1,0,0,1) -  Charge Current   - 2425mA  */
+                                        /* B7,B6,B5,B4,B3 (1,0,0,1,1) -  Charge Current   - 1975mA  */
     do{
         ret = I2C_Write (I2C_0_HANDLE, BQ24160_I2C_ADDR, buf_wr, 2);
         if(ret == I2C_FAULT)

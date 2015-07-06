@@ -123,7 +123,7 @@ int  main (void)
 
     Pwr_SystemPowerDisable();           /* Disable system power                                     */
 
-    Pwr_CC_Pwr_Status_Update(CC_PWR_OFF); //Initialize to power offf status.
+    Pwr_CC_Pwr_Status_Update(CC_PWR_OFF); //Initialize to power off status.
 	Sys_Set_System_Status(FALSE);
 	is_pwr_status_gpio_stable = FALSE;
     
