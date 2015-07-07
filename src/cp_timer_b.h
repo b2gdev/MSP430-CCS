@@ -55,6 +55,7 @@
 extern BOOLEAN power_switch_toggle;
 extern BOOLEAN power_off_pressed;
 extern BOOLEAN power_reset_pressed;
+extern BOOLEAN mp_resetting;
 /*
 *********************************************************************************************************
 *   DEFAULT CONFIGURATION

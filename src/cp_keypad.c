@@ -72,6 +72,7 @@
 BOOLEAN power_switch_toggle = 0;
 BOOLEAN power_off_pressed = 0;
 BOOLEAN power_reset_pressed = 0;
+BOOLEAN mp_resetting = 0;
 
 extern INT08U updateFirmware();
 

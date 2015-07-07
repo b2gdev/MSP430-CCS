@@ -116,6 +116,7 @@ extern INT32U TmrB_heartbeat;
 #define CP_SPI_SIMO_3V3_HIGH()  BIT_SET(P3OUT,P4)      /* P3.4 = 1     */
 #define CP_SPI_SIMO_3V3_LOW()   BIT_CLR(P3OUT,P4)      /* P3.4 = 0     */
 #define OMAP_STATUS_1           (P6IN & P5)            /* P6.5         */
+#define OMAP_STATUS_2           (P6IN & P6)            /* P6.6         */
 
 /*
 *********************************************************************************************************
@@ -142,11 +143,12 @@ extern INT32U TmrB_heartbeat;
 */
 void  Sys_GpioInit (void);
 void  Sys_GpioDeInit (void);
+void Pwr_SwConf (void);
 void Sys_ShutDownLPInit(void);
 void Sys_ShutDownLPDeInit(void);
 INT16U  Sys_GetSystemCurrent_mA (void);
 
-void  Sys_DelayMs (INT16U count);
+inline void  Sys_DelayMs (INT16U count);
 
 void  Sys_BeepOn(void);
 void  Sys_BeepOff(void);

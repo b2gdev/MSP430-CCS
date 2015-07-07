@@ -186,6 +186,7 @@ void __attribute__ ((interrupt(TIMERB0_VECTOR))) TmrB_Isr (void)
     }
     else if (power_reset_pressed)
     {
+    	mp_resetting = 1;
       /*{KW}: just a beep */
       if(((Sys_Get_Heartbeat() - time_stamp_start) % 256) > 32)
       {        

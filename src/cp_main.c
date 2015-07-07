@@ -171,6 +171,7 @@ int  main (void)
     	case BAT_LEVEL_FULL:
 		{
 			Pwr_ChargerPowerEnable();
+			Pwr_SwConf();
 
 			/* Wait for power key OFF to ON transition */
 			while(PWR_SW)
@@ -246,6 +247,7 @@ int  main (void)
 				}
 				SPI_Init();
 				Sys_Set_System_Status(TRUE);
+				mp_resetting = 0;
     		}
 	  }
       else{
@@ -253,8 +255,8 @@ int  main (void)
     	  if(Sys_Get_System_Status() == TRUE){
     		  Pwr_CC_Pwr_Status_Update(CC_PWR_OFF);
     		  Sys_Set_System_Status(FALSE);
-    		  if(!power_reset_pressed){			/* De-Init pheriperals before going to LMP at shutdown		*/
-				  ADC12_DeInit();				/* to reduce power consumption								*/
+    		  if(!mp_resetting && !OMAP_STATUS_2){/* De-Init pheriperals before going to LMP at shutdown    */
+				  ADC12_DeInit();				  /* to reduce power consumption							*/
 				  SPI_DeInit();
 				  I2C_DeInit();
 				  Sys_ShutDownLPInit();

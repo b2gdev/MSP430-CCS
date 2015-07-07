@@ -310,10 +310,10 @@ void  Sys_GpioInit (void)
 	BIT_CLR(P6OUT,P5);      /* Pulled down                                                         */
 
 	/* OMAP_STATUS_2 */
-	BIT_CLR(P6DIR,P6);      /* Input - Unused                                                      */
+	BIT_CLR(P6DIR,P6);      /* Input                                                               */
 	BIT_CLR(P6SEL,P6);      /* I/O function                                                        */
 	BIT_SET(P6REN,P6);      /* Pullup/Pulldown enabled                                             */
-	BIT_CLR(P6OUT,P5);      /* Pulled down                                                         */
+	BIT_CLR(P6OUT,P6);      /* Pulled down                                                         */
 
 	/* CP_STATUS_1 */
 	BIT_SET(P6DIR,P7);      /* Output - Unused                                                     */
@@ -331,23 +331,25 @@ void  Sys_GpioInit (void)
 	BIT_CLR(P8SEL,P3);      /* I/O function                                                        */
 	BIT_CLR(P8REN,P3);      /* Pullup/Pulldown disabled                                            */
 	BIT_CLR(P8OUT,P3);      /* LOW -                                                               */
-
-    /* PWR_SW */
-    BIT_CLR(P2DIR,P1);     /* Input                                                                */
-    BIT_CLR(P2SEL,P1);     /* I/O function                                                         */
-    BIT_SET(P2REN,P1);     /* Pullup/Pulldown enabled                                              */
-    BIT_CLR(P2OUT,P1);     /* Pulled down                                                          */
-    if(PWR_SW)
-    	BIT_SET(P2IES,P1); /* HIGH -> LOW interrupt                                                */
-    else
-    	BIT_CLR(P2IES,P1); /* LOW -> HIGH interrupt                                                */
-    BIT_CLR(P2IFG,P1);     /* Clear interrupt flag                                                 */
-    BIT_SET(P2IE ,P1);     /* Enable interrupt                                                     */
 }
 
 void  Sys_GpioDeInit (void)
 {
 
+}
+
+void Pwr_SwConf (void){
+	/* PWR_SW */
+	BIT_CLR(P2DIR,P1);     /* Input                                                                */
+	BIT_CLR(P2SEL,P1);     /* I/O function                                                         */
+	BIT_SET(P2REN,P1);     /* Pullup/Pulldown enabled                                              */
+	BIT_CLR(P2OUT,P1);     /* Pulled down                                                          */
+	if(PWR_SW)
+		BIT_SET(P2IES,P1); /* HIGH -> LOW interrupt                                                */
+	else
+		BIT_CLR(P2IES,P1); /* LOW -> HIGH interrupt                                                */
+	BIT_CLR(P2IFG,P1);     /* Clear interrupt flag                                                 */
+	BIT_SET(P2IE ,P1);     /* Enable interrupt                                                     */
 }
 
 							/* To reduce the power as much as possible at shutdown				   */
@@ -418,7 +420,7 @@ void Sys_ShutDownLPDeInit(void)
 
 }
 
-void  Sys_DelayMs (INT16U count)
+inline void  Sys_DelayMs (INT16U count)
 {
     INT16U i = 0;
     
