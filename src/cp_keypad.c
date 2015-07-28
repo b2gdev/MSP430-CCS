@@ -189,6 +189,7 @@ void  Kpd_ReadEx (void)
     INT08U i = 0;
     INT08U j = 0;
     INT08U match_count = 0;
+    BOOLEAN enter_recovery = 0;
     
     INT32U prev_main_keys = 0;
 
@@ -215,6 +216,16 @@ void  Kpd_ReadEx (void)
        MainKeys = (KEYMAT_COL2) ? (MainKeys | VOL_DOWN_KEY_BIT)  : (MainKeys & (~(VOL_DOWN_KEY_BIT)));
     }
     
+    enter_recovery = (KEYMAT_COL2);
+    /*{AH}:: CP_STATUS_1 drives MP to recovery mode during boot up */
+	#ifdef RECOVERY_MODE_ENTERING_DEFINED
+	if(enter_recovery){
+		CP_STATUS_1_HIGH();
+	}else{
+		CP_STATUS_1_LOW();
+	}
+	#endif
+
     BIT_CLR(KEYMAT_ROWS,KEYMAT_ROW0);
     __delay_cycles(1000);
     BIT_SET(KEYMAT_ROWS,KEYMAT_ROW1);

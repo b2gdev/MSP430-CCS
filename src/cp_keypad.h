@@ -74,6 +74,7 @@ extern INT32U time_stamp_start;
 */
 #define PWR_OFF_KEY_COMBINATION_DEFINED
 #define PWR_RESET_KEY_COMBINATION_DEFINED
+#define RECOVERY_MODE_ENTERING_DEFINED
 
 #define PWR_SW          (P2IN & P1)             /* P2.1         */
 
@@ -124,8 +125,8 @@ extern INT32U time_stamp_start;
 #define KEY_VALID_THRESHOLD (KEY_SAMPLE_COUNT * 0.75)
 
 /*{KW}: Test shutdown key combinaiton: to be decided */
-#define PWR_SHUTDOWN_COMB   (BR_KEY8_BIT | VOL_DOWN_KEY_BIT)
-#define PWR_RESET_COMB      (BR_KEY1_BIT | VOL_DOWN_KEY_BIT)
+#define PWR_SHUTDOWN_COMB   (BWD_KEY_BIT | VOL_DOWN_KEY_BIT)
+#define PWR_RESET_COMB      (FWD_KEY_BIT | VOL_DOWN_KEY_BIT)
 
 /*
 *********************************************************************************************************

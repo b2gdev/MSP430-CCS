@@ -134,7 +134,7 @@ int  main (void)
 
     ADC12_Init();                       /* Initialize ADC12                                         */
     #ifdef CHK_PRG_RESET
-    Clk_ACLK_div(ACLK_DIV_4);			/* ACLK divide                                              */
+    Clk_ACLK_div(ACLK_DIV_8);			/* ACLK divide                                              */
     Sys_BeepHigh(1000);                 /* High frequency beep, for debug purposes                  */
     #endif
 
@@ -147,31 +147,28 @@ int  main (void)
     #else
     battery_level = BAT_LEVEL_GOOD;
     #endif
+    Pwr_SwConf();
 
     switch (battery_level){
     	case BAT_LEVEL_SHORT_CCT:
     	case BAT_LEVEL_DEAD:
     	case BAT_LEVEL_WEAK:
     	{
-    		/* Weak battery indication      */
-			Sys_BeepHigh(50);
-			Sys_DelayMs(200);
-			Sys_BeepHigh(50);
-			Sys_DelayMs(200);
-			Sys_BeepHigh(50);
-
 			/* Wait until chrger detected */
 			while (!CP_VBUS_OTG_DET){
 				 __low_power_mode_4();			/* Stay at LMP4 and awake when charger is plugged           */
 				Sys_DelayMs(250);
 			}
-
     	}
     	case BAT_LEVEL_GOOD:
     	case BAT_LEVEL_FULL:
 		{
 			Pwr_ChargerPowerEnable();
-			Pwr_SwConf();
+
+			#ifdef  ENABLE_KEYPAD
+			Kpd_Init();                 		/* Initialize keypad         	                            */
+			TmrB_Init();                		/* Initialize keypad sampling timer    		                */
+			#endif
 
 			/* Wait for power key OFF to ON transition */
 			while(PWR_SW)
@@ -187,11 +184,6 @@ int  main (void)
 												   switch transition										*/
 
 			CP_PWR01_ENABLE();             		/* Enable Braille display                        			*/
-
-			#ifdef  ENABLE_KEYPAD
-			Kpd_Init();                 		/* Initialize keypad         	                            */
-			TmrB_Init();                		/* Initialize keypad sampling timer    		                */
-			#endif
 
 			#ifdef ENABLE_DISPLAY
 			Brd_Init();                 		/* Initialize Braille display                               */

@@ -72,6 +72,8 @@
 #define     I2C_SUCCESS                 0
 #define     I2C_BUSY                    1
 #define     I2C_FAULT                   2
+
+#define     I2C_TIMEOUT                 800000
 /*
 *********************************************************************************************************
 *   DATA TYPES

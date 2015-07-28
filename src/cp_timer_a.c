@@ -44,12 +44,12 @@
 *********************************************************************************************************
 */
 //#define     TMR_A_DEBUG
-#define     TMR_A_BAT_CHRG_CCR0         0xFFFF
+#define     TMR_A_BAT_CHRG_CCR0         0x7FFF
 #define     TMR_A_BAT_CHRG_DIVIDER      0
-                                            /* Battery Charger Timer Period - 10 sec                */
-                                            /* Clock Input - 16 MHz                                 */
+                                            /* Battery Charger Timer Period - 8 sec                 */
+                                            /* Clock Input - 32768 Hz                               */
                                             /* Input Divider - 8                                    */
-                                            /* CCR0 - 0xFFFF (65535)                                */
+                                            /* CCR0 - 0x7FFF (32767)                                */
 
 /*
 *********************************************************************************************************
@@ -220,11 +220,9 @@ void __attribute__ ((interrupt(TIMERA0_VECTOR))) TmrA_Isr (void)
 				return;
 			}
 		}else if(chgrStatus == BQ24160_STAT_CHARGE_DONE){
-			#ifdef ENABLE_CHRG_TONE
 			Sys_BeepHigh(100);
 			Sys_DelayMs(200);
 			Sys_BeepHigh(100);
-			#endif
 		}else if(MINSYSMode){
 			#ifdef ENABLE_CHRG_TONE
 			Sys_BeepHigh(100);

@@ -382,13 +382,20 @@ unsigned char TI_USCI_I2C_notready(){
 //                          1: Timeout Error
 //------------------------------------------------------------------------------
 unsigned char I2C_wait_till_ready(){
-  while(TI_USCI_I2C_notready()){
+  INT32U i2cTried =0;
+
+  while((TI_USCI_I2C_notready()) && (i2cTried<I2C_TIMEOUT)){
     if(Transaction_failed){
         Transaction_failed = 0;
         return 1;
     }
+    i2cTried++;
   }
+
+  if(i2cTried<I2C_TIMEOUT)
     return 0;
+  else
+    return 1;
 }
 
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)

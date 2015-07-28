@@ -315,11 +315,11 @@ void  Sys_GpioInit (void)
 	BIT_SET(P6REN,P6);      /* Pullup/Pulldown enabled                                             */
 	BIT_CLR(P6OUT,P6);      /* Pulled down                                                         */
 
-	/* CP_STATUS_1 */
-	BIT_SET(P6DIR,P7);      /* Output - Unused                                                     */
+	/* CP_STATUS_1 */		/* Request MP to drive into the recovery mode when booting			   */
+	BIT_SET(P6DIR,P7);      /* Output                                                              */
 	BIT_CLR(P6SEL,P7);      /* I/O function                                                        */
 	BIT_CLR(P6REN,P7);      /* Pullup/Pulldown disabled                                            */
-	BIT_CLR(P6OUT,P7);      /* LOW -                                                               */
+	BIT_CLR(P6OUT,P7);      /* LOW - Not to recovery mode                                          */
 
 	/* CP_CHRG_STAT */
 	BIT_CLR(P8DIR,P4);      /* Input - Unused                                                      */
@@ -381,6 +381,7 @@ void Sys_ShutDownLPInit(void)
 	BIT_CLR(P3REN,P5);      /* Pullup/Pulldown disabled                                            */
 	BIT_CLR(P3OUT,P5);      /* LOW -                                                               */
 
+	CP_STATUS_1_LOW();		/* CP_STATUS_1 - Low - Not to recovery mode when booting			   */
 	DSS_CP_SPI_CS_LOW();
 	CP_PWR01_DISABLE();     /* BRD and USB Host off                                                */
 	CC_CP_PWRON_LOW();		/* TPS Power Pin Low                                                   */
@@ -527,6 +528,9 @@ __interrupt void  Port_2isr (void)
 void __attribute__ ((interrupt(PORT2_VECTOR))) Port_2isr (void)
 #endif
 {
+	INT08U battery_level        = 0x00;
+	BOOLEAN batdwn = FALSE;
+
     if (P2IFG & P1){										//Power Switch interrupt. Catches both rise and fall edges
     	Sys_DelayMs(200);									//This is to eliminate PWR_SW bounce
 
@@ -538,12 +542,35 @@ void __attribute__ ((interrupt(PORT2_VECTOR))) Port_2isr (void)
 		Brd_Pwr_Update(Pwr_Get_CC_Pwr_Status());
 
 		if (is_power_switch_on && (power_switch_toggle == 0) && ((Pwr_Get_CC_Pwr_Status() == CC_PWR_MIDDLE) || (Pwr_Get_CC_Pwr_Status() == CC_PWR_SUSPEND) || (Pwr_Get_CC_Pwr_Status() == CC_PWR_OFF))){
-			CC_CP_PWRON_HIGH();
-			time_stamp_start = Sys_Get_Heartbeat();
-			power_switch_toggle = 1;
-			__low_power_mode_off_on_exit(); /* Exit LPM                                            */
-			if(Pwr_Get_CC_Pwr_Status() == CC_PWR_OFF)
-				Sys_BeepOn(); //{RD} Power switch toggle indicator beep ON
+			if(Pwr_Get_CC_Pwr_Status() == CC_PWR_OFF){
+				ADC12_Init();					//Enable ADC before taking the measurement
+				battery_level = Bat_GetInitialBatteryLevel();
+
+				if((!CP_VBUS_OTG_DET) && ((battery_level == BAT_LEVEL_SHORT_CCT) || (battery_level == BAT_LEVEL_DEAD) || (battery_level == BAT_LEVEL_WEAK))){
+					TmrB_IntDisable();			//Do not alllow timerB interrupt to run until the BEEPS are over
+
+					/* Weak battery indication      */
+					Sys_BeepHigh(50);
+					Sys_DelayMs(200);
+					Sys_BeepHigh(50);
+					Sys_DelayMs(200);
+					Sys_BeepHigh(50);
+
+					TmrB_IntEnable();
+					ADC12_DeInit();			//Disable ADC an stay in the same mode
+					batdwn = TRUE;
+				}else{
+					Sys_BeepOn(); //{RD} Power switch toggle indicator beep ON
+				}
+			}else{}
+
+			if(!batdwn){
+				CC_CP_PWRON_HIGH();
+				time_stamp_start = Sys_Get_Heartbeat();
+				power_switch_toggle = 1;
+				__low_power_mode_off_on_exit(); /* Exit LPM                                            */
+			}else{}
+
 		}
 		else if (!is_power_switch_on && (power_switch_toggle == 0) && ((Pwr_Get_CC_Pwr_Status() == CC_PWR_ACTIVE))){
 			CC_CP_PWRON_HIGH();

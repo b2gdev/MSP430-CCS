@@ -85,6 +85,8 @@ extern INT32U TmrB_heartbeat;
 #define CP_PWR01_DISABLE()      BIT_CLR(P8OUT,P7)       /* P8.7 = 0 (Input only pin) */
 #define CC_CP_PWRON_HIGH()      BIT_SET(P5OUT,P4)       /* P5.4 = 1     */
 #define CC_CP_PWRON_LOW()       BIT_CLR(P5OUT,P4)       /* P5.4 = 0     */
+#define CP_STATUS_1_LOW()		BIT_CLR(P6OUT,P7)		/* P8.7 = 0		*/
+#define CP_STATUS_1_HIGH()		BIT_SET(P6OUT,P7)		/* P8.7 = 1		*/
 
 //#define BUZZER_EN             P5OUT_bit.P6            /* P5.6         */
 // #define CP_SOFT_RST          P5OUT_bit.P6            /* P5.6         */
