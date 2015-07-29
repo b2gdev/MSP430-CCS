@@ -125,9 +125,8 @@ extern INT32U time_stamp_start;
 #define KEY_VALID_THRESHOLD (KEY_SAMPLE_COUNT * 0.75)
 
 /*{KW}: Test shutdown key combinaiton: to be decided */
-#define PWR_SHUTDOWN_COMB   (BWD_KEY_BIT | VOL_DOWN_KEY_BIT)
-#define PWR_RESET_COMB      (FWD_KEY_BIT | VOL_DOWN_KEY_BIT)
-
+#define PWR_SHUTDOWN_COMB   (BR_KEY1_BIT | BR_KEY2_BIT | BR_KEY3_BIT | BR_KEY4_BIT | VOL_DOWN_KEY_BIT)
+#define PWR_RESET_COMB      (BR_KEY5_BIT | BR_KEY6_BIT | BR_KEY7_BIT | BR_KEY8_BIT | VOL_DOWN_KEY_BIT)
 /*
 *********************************************************************************************************
 *   DATA TYPES

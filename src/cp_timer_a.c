@@ -220,9 +220,13 @@ void __attribute__ ((interrupt(TIMERA0_VECTOR))) TmrA_Isr (void)
 				return;
 			}
 		}else if(chgrStatus == BQ24160_STAT_CHARGE_DONE){
-			Sys_BeepHigh(100);
-			Sys_DelayMs(200);
-			Sys_BeepHigh(100);
+			if(chgrDnBeep){
+				Sys_BeepHigh(500);
+				Sys_DelayMs(200);
+				Sys_BeepHigh(500);
+				chgrDnBeep = FALSE;
+			}else{}
+
 		}else if(MINSYSMode){
 			#ifdef ENABLE_CHRG_TONE
 			Sys_BeepHigh(100);

@@ -550,11 +550,11 @@ void __attribute__ ((interrupt(PORT2_VECTOR))) Port_2isr (void)
 					TmrB_IntDisable();			//Do not alllow timerB interrupt to run until the BEEPS are over
 
 					/* Weak battery indication      */
-					Sys_BeepHigh(50);
+					Sys_BeepHigh(100);
 					Sys_DelayMs(200);
-					Sys_BeepHigh(50);
+					Sys_BeepHigh(100);
 					Sys_DelayMs(200);
-					Sys_BeepHigh(50);
+					Sys_BeepHigh(100);
 
 					TmrB_IntEnable();
 					ADC12_DeInit();			//Disable ADC an stay in the same mode
@@ -592,10 +592,12 @@ void __attribute__ ((interrupt(PORT2_VECTOR))) Port_2isr (void)
     	if(Pwr_Get_CC_Pwr_Status() == CC_PWR_OFF)
     		Sys_Set_System_Status(TRUE);
 
-    	if(CP_VBUS_OTG_DET)
+    	if(CP_VBUS_OTG_DET){
 			BIT_SET(P2IES,P6); 				/* HIGH -> LOW interrupt                               */
-		else
+    	}else{
 			BIT_CLR(P2IES,P6); 				/* LOW -> HIGH interrupt                               */
+			chgrDnBeep = TRUE;
+    	}
 		BIT_CLR(P2IFG,P6);     				/* Clear interrupt flag                                */
 		BIT_SET(P2IE ,P6);     				/* Enable interrupt                                    */
 		__low_power_mode_off_on_exit(); 	/* Exit LPM - Let main to run                          */

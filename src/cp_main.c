@@ -75,6 +75,8 @@ INT08U battery_level        = 0x00;
 
 BOOLEAN is_power_switch_on  = 0;
 
+BOOLEAN chgrDnBeep = TRUE;
+
 INT08U CC_Pwr_Status       	= 0;
 BOOLEAN is_pwr_status_gpio_stable = FALSE;
 
@@ -135,7 +137,7 @@ int  main (void)
     ADC12_Init();                       /* Initialize ADC12                                         */
     #ifdef CHK_PRG_RESET
     Clk_ACLK_div(ACLK_DIV_8);			/* ACLK divide                                              */
-    Sys_BeepHigh(1000);                 /* High frequency beep, for debug purposes                  */
+    Sys_BeepHigh(1000);                 /* High frequency beep,                                     */
     #endif
 
 	TmrA_Init(TMR_A_MODE_BAT_CHARGER);
@@ -176,7 +178,7 @@ int  main (void)
 			while(!PWR_SW)
 				Sys_DelayMs(50);
 
-			Sys_BeepHigh(125);    				/* System bootup indication Beep1			                */
+			Sys_BeepHigh(100);    				/* System bootup indication Beep1			                */
 
 			is_power_switch_on = PWR_SW; 		/* Initial status of the power switch              			*/
 
