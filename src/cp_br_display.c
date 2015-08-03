@@ -247,6 +247,13 @@ void  Brd_ClearDisplay(void)
   Brd_WriteDisplay(brl_disp_clear_buf);
 }
 
+void  Brd_Conrol (INT08U control){
+	if(control == DISPLAY_ENABLE){
+		BRD_ENABLE();
+	}else
+		BRD_DISABLE();
+}
+
 
 /* {PS} - Uncomment if Write and Read functionality is required */
 /*

@@ -301,6 +301,23 @@ void  Cmd_RxCommandProcess (void)
                                     break;
                                 }
                                 
+                            case CMD_DISPLAY_ON_OFF:
+							{
+								if((active_rx_data[0] == DISPLAY_ENABLE) || (active_rx_data[0] == DISPLAY_DISABLE))
+									Brd_Conrol(active_rx_data[0]);
+
+								Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
+								active_tx_checksum+= 0x00;
+
+								Cbuf_Write(&SPI_1_TransmitBuffer, 0x01);
+								active_tx_checksum+= 0x01;
+
+								Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
+								active_tx_checksum+= 0x00;
+
+								break;
+							}
+
                             case CMD_DISPLAY_WRITE:
                                 {
                                     Brd_WriteDisplay(active_rx_data);                                  

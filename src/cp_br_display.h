@@ -78,6 +78,9 @@
 
 #define BRD_CLK_HALF_DELAY  7
 
+#define DISPLAY_ENABLE		1
+#define DISPLAY_DISABLE		0
+
 /* Buffer sizes */
 #define BRD_DISP_BUF_SIZE   24              /* Size of local Braille display buffer                 */
 #define BRD_KEY_BUF_SIZE    5              /* Size of local Key buffer                              */
@@ -116,6 +119,7 @@ void  Brd_WriteDisplay (PTR_INT08U buf);
 void  Brd_ReadKeys (PTR_INT08U buf);
 void Brd_Pwr_Update(INT08U pwr_status);
 void  Brd_ClearDisplay(void);
+void  Brd_Conrol (INT08U control);
 /* {PS} - Uncomment when Write and Read functionality is required */
 /* void  Brd_WriteAndRead (PTR_INT08U wr_buf, PTR_INT08U rd_buf); */
 
