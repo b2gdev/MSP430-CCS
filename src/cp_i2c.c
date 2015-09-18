@@ -131,6 +131,28 @@ void  I2C_DeInit (void)
     
 }
 
+void I2C_Issue_Handle (void)
+{
+	if(timer_a_mode != TMR_A_MODE_22_SEC){
+		I2C2_DISABLE();			/* I2C level converter off                                             */
+
+		/* I2C2_3V3_SDA */
+		BIT_SET(P3DIR,P1);      /* Output                                                              */
+		BIT_CLR(P3SEL,P1);      /* I/O function                                                        */
+		BIT_CLR(P3REN,P1);     	/* Pullup/Pulldown disabled                                            */
+		BIT_CLR(P3OUT,P1);      /* LOW                                                                 */
+
+		/* I2C2_3V3_SCL */
+		BIT_SET(P3DIR,P2);      /* Output                                                              */
+		BIT_CLR(P3SEL,P2);      /* I/O function                                                        */
+		BIT_CLR(P3REN,P2);      /* Pullup/Pulldown disabled                                            */
+		BIT_CLR(P3OUT,P2);      /* LOW                                                                 */
+
+		TmrA_Init(TMR_A_MODE_22_SEC);	/* Hold SDA & SCL low for 22 sec                               */
+	}
+
+}
+
 //I2C_BUSY state is currently not returned. It is defined to handle mustimaster collision aviodance
 INT08U  I2C_Write (INT08U handle, INT08U slave_addr, PTR_INT08U data, INT08U count)
 {
@@ -240,8 +262,6 @@ i2c_recovery:
 //-----------------------------------------------------------------------------
 void TI_USCI_I2C_slave_receiveinit()
 {
-	I2C2_ENABLE();
-
     P3SEL |= 0x06;              /* I2C function                                                     */
     P3REN &= 0xF9;              /* Pullup/Pulldown disabled                                         */
 
@@ -265,8 +285,6 @@ void TI_USCI_I2C_slave_receiveinit()
 //-----------------------------------------------------------------------------
 void TI_USCI_I2C_receiveinit(unsigned char slave_address)
 {
-	I2C2_ENABLE();
-
     P3SEL |= 0x06;              /* I2C function                                                     */
     P3REN &= 0xF9;              /* Pullup/Pulldown disabled                                         */
 
@@ -296,8 +314,6 @@ void TI_USCI_I2C_receiveinit(unsigned char slave_address)
 //------------------------------------------------------------------------------
 void TI_USCI_I2C_transmitinit(unsigned char slave_address)
 {
-	I2C2_ENABLE();
-
     P3SEL |= 0x06;              /* I2C function                                                     */
     P3REN &= 0xF9;              /* Pullup/Pulldown disabled                                         */
 
@@ -392,10 +408,13 @@ unsigned char I2C_wait_till_ready(){
     i2cTried++;
   }
 
-  if(i2cTried<I2C_TIMEOUT)
+  if(i2cTried<I2C_TIMEOUT){
+	i2c_timeout_count = 0;
     return 0;
-  else
+  }else{
+	i2c_timeout_count++;
     return 1;
+  }
 }
 
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)

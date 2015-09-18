@@ -73,7 +73,12 @@
 #define     I2C_BUSY                    1
 #define     I2C_FAULT                   2
 
-#define     I2C_TIMEOUT                 800000
+#define     I2C_TIMEOUT                 200000		// 200000 = Approx 250ms
+
+/* I2C Issue Handling */
+#define     I2C_ISSUE_HANDLING_AUTO
+#define     I2C_TIMEOUTS_FOUND_THRESHOLD        2
+#define     I2C_ISSUE_FOUND_THRESHOLD           4
 /*
 *********************************************************************************************************
 *   DATA TYPES
@@ -85,7 +90,7 @@
 *   GLOBAL VARIABLES
 *********************************************************************************************************
 */
-
+INT08U i2c_timeout_count;
 /*
 *********************************************************************************************************
 *   MACROS
@@ -99,6 +104,8 @@
 */
 void  I2C_Init (void);
 void  I2C_DeInit (void);
+
+void I2C_Issue_Handle (void);
 
 INT08U  I2C_Write (INT08U handle, INT08U slave_addr, PTR_INT08U data, INT08U count);
 INT08U  I2C_Read (INT08U handle, INT08U slave_addr, PTR_INT08U data, INT08U count, BOOLEAN sync);

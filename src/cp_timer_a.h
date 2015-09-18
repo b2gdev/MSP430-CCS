@@ -66,6 +66,8 @@
 */
 #define     TMR_A_MODE_BAT_CHARGER      0
 #define     TMR_A_MODE_TOUCHPAD         1
+#define		TMR_A_MODE_4_SEC			2
+#define 	TMR_A_MODE_22_SEC			3
 
 //#define ENABLE_CHRG_TONE                   /* Comment this in release firmware builds */
 #define CHK_DEFAULT_PARAMS
@@ -82,6 +84,7 @@
 *   GLOBAL VARIABLES
 *********************************************************************************************************
 */
+INT08U timer_a_mode;
 extern BOOLEAN chgrDnBeep;
 /*
 *********************************************************************************************************

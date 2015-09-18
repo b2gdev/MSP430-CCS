@@ -130,7 +130,9 @@ int  main (void)
 	is_pwr_status_gpio_stable = FALSE;
     
     CP_USBOTG_S_TPS();                 	/* USB switch connected to TPS65950                         */
-    I2C2_ENABLE();
+
+    i2c_timeout_count = 0;
+    I2C2_ENABLE();						/* I2C level converter on                                   */
     
     Clk_DCOInit();                      /* Initialize DCO                                           */
 
@@ -256,11 +258,13 @@ int  main (void)
 				  Sys_ShutDownLPInit();
 				  if(CP_VBUS_OTG_DET){
 					  ADC12_Init();
+					  I2C2_ENABLE();			/* I2C level converter on                                   */
 					  __low_power_mode_3();		/* Stay at LMP3 to support chrging when charger is plugged  */
 				  }
 				  else{
 					  __low_power_mode_4();
 					  ADC12_Init();
+					  I2C2_ENABLE();			/* I2C level converter on                                   */
 				  }
 				  Sys_ShutDownLPDeInit();		/* Take the pins back to their assigned states. SPI and I2C */
 			  }else{}							/* re-inits are done at neceassary places				    */
@@ -275,5 +279,21 @@ int  main (void)
     		  }
     	  }
       }
+
+#ifdef I2C_ISSUE_HANDLING_AUTO
+     if(i2c_timeout_count >= I2C_ISSUE_FOUND_THRESHOLD){
+    	 I2C_Issue_Handle();
+     }else if(i2c_timeout_count >= I2C_TIMEOUTS_FOUND_THRESHOLD){
+    	 I2C2_DISABLE();						/* I2C level converter off                                  */
+    	 if(timer_a_mode != TMR_A_MODE_4_SEC){
+			 TmrA_Init(TMR_A_MODE_4_SEC);
+		 }
+     }else{
+    	 I2C2_ENABLE();							/* I2C level converter on                                   */
+    	 if(timer_a_mode != TMR_A_MODE_BAT_CHARGER){
+    		 TmrA_Init(TMR_A_MODE_BAT_CHARGER);
+    	 }
+     }
+#endif
     }/* end of main while loop */
 }

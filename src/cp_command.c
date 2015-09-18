@@ -70,6 +70,12 @@
 
 #define     MAX_DATA_BUF_SIZE       256
 
+#define		RCVD_DATA_LEN_STATUS_REQUEST 	0x00
+#define		RCVD_DATA_LEN_DISP_ON_OFF		0x01
+#define		RCVD_DATA_LEN_DISP_WRITE		0x18
+#define		RCVD_DATA_LEN_PWR_STATUS		0x01
+
+
 /*
 *********************************************************************************************************
 *   LOCAL CONSTANTS
@@ -110,6 +116,7 @@ INT08U active_tx_checksum;
 *   LOCAL FUNCTION PROTOTYPES
 *********************************************************************************************************
 */
+INT16U getDataLength (void);
 
 /*
 *********************************************************************************************************
@@ -204,7 +211,10 @@ void  Cmd_RxCommandProcess (void)
 
                     data_length         = 0;
 
-                    if (active_rx_length > 0){
+                    if(active_rx_length != getDataLength()){
+                    	rx_state = RX_STATE_STX1;    	/* out of sync, invalid data length              */
+                    }
+                    else if (active_rx_length > 0){
                         rx_state = RX_STATE_DATA;
                     }
                     else{
@@ -474,3 +484,19 @@ void  Cmd_TxCommandProcess (void)
 *********************************************************************************************************
 *********************************************************************************************************
 */
+INT16U getDataLength (void)
+{
+	INT16U packetType = ((active_rx_device << 8) + active_rx_command);
+
+	if ((packetType == CMD_CP430_GET_STATUS) || (packetType == CMD_KEYPAD_GET_STATUS) || (packetType == CMD_CHARGER_GET_STATUS)){
+		return RCVD_DATA_LEN_STATUS_REQUEST;
+	}else if (packetType ==  CMD_DISPLAY_ON_OFF){
+		return RCVD_DATA_LEN_DISP_ON_OFF;
+	}else if (packetType ==  CMD_DISPLAY_WRITE){
+		return RCVD_DATA_LEN_DISP_WRITE;
+	}else if (packetType == CMD_UPDATE_CC_PWR_STATUS){
+		return RCVD_DATA_LEN_PWR_STATUS;
+	}else{
+		return 0;				//Undefined packet type
+	}
+}

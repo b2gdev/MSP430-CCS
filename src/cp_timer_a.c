@@ -50,6 +50,8 @@
                                             /* Clock Input - 32768 Hz                               */
                                             /* Input Divider - 8                                    */
                                             /* CCR0 - 0x7FFF (32767)                                */
+#define     TMR_A_22_SEC_CCR0         	0xAFFF
+#define     TMR_A_4_SEC_CCR0         	0x3FFF
 
 /*
 *********************************************************************************************************
@@ -74,7 +76,6 @@
 *   LOCAL VARIABLES
 *********************************************************************************************************
 */
-INT08U timer_a_mode;
 INT16U timer_a_divider = 0;
 
 /*
@@ -98,10 +99,12 @@ INT16U timer_a_divider = 0;
 */
 void  TmrA_Init (INT08U mode)
 {
-    timer_a_mode    = mode;     /* Set Timer A usage mode (Battery charging or Touchpad)            */
+    timer_a_mode    = mode;     /* Set Timer A usage mode                                           */
     timer_a_divider = 0;        /* Reset Timer A divider                                            */
 
     if (timer_a_mode == TMR_A_MODE_BAT_CHARGER){    /* Battery charger mode                         */
+    	TACTL = TACLR;		    /* TACLR        : 0      - Timer Clear - Cleared                    */
+
         TACCTL0 = CCIE;         /* CMx          : 00   - Capture mode - No capture                  */
                                 /* CCISx        : 00   - Capture/Compare input - CCIxA              */
                                 /* SCS          : 0    - Asynchronous capture                       */
@@ -129,9 +132,68 @@ void  TmrA_Init (INT08U mode)
 
         __bis_SR_register(GIE); /* Enable Global Interrupts                                         */
     }
-    else{                                       /* Touchpad mode                                    */
-        ;
+    else if(timer_a_mode == TMR_A_MODE_4_SEC){    /* 4 seconds mode                                 */
+    	TACTL = TACLR;		    /* TACLR        : 0      - Timer Clear - Cleared                    */
+
+    	TACCTL0 = CCIE;         /* CMx          : 00   - Capture mode - No capture                  */
+								/* CCISx        : 00   - Capture/Compare input - CCIxA              */
+								/* SCS          : 0    - Asynchronous capture                       */
+								/* SCCI         : 0    - Synchronized capture/compare input         */
+								/* Unused       : 0                                                 */
+								/* CAP          : 0    - Capture mode - Compare mode                */
+								/* OUTMODx      : 000  - OUT bit value                              */
+								/* CCIE         : 1    - Capture/Compare interrupt - Enabled        */
+								/* CCI          : 0    - (Read only)                                */
+								/* OUT          : 0    - Output mode 0, Output - Low                */
+								/* COV          : 0    - Capture overflow - No capture overflow     */
+								/* CCIFG        : 0    - Capture/Compare interrupt flag (Read only) */
+
+		TACCR0  = TMR_A_4_SEC_CCR0;  /* TACCRx       : Compare mode Timer value                     */
+
+		TACTL   = TASSEL_1 + ID_0 + MC_1;
+								/* Unused       : 000000                                            */
+								/* TASSELx      : 01     - Clock source - ACLK                      */
+								/* IDx          : 00     - Input divider - 1                        */
+								/* MCx          : 01     - Mode control - Up mode                   */
+								/* Unused       : 0                                                 */
+								/* TACLR        : 0      - Timer Clear - Not cleared                */
+								/* TAIE         : 0      - Timer Interrupt - Interrupt disabled     */
+								/* TAIFG        : 0      - Timer Interrupt flag                     */
+
+		__bis_SR_register(GIE); /* Enable Global Interrupts                                         */
     }
+    else if(timer_a_mode == TMR_A_MODE_22_SEC){   /* 16 seconds mode                                */
+    	TACTL = TACLR;		    /* TACLR        : 0      - Timer Clear - Cleared                    */
+
+    	TACCTL0 = CCIE;         /* CMx          : 00   - Capture mode - No capture                  */
+								/* CCISx        : 00   - Capture/Compare input - CCIxA              */
+								/* SCS          : 0    - Asynchronous capture                       */
+								/* SCCI         : 0    - Synchronized capture/compare input         */
+								/* Unused       : 0                                                 */
+								/* CAP          : 0    - Capture mode - Compare mode                */
+								/* OUTMODx      : 000  - OUT bit value                              */
+								/* CCIE         : 1    - Capture/Compare interrupt - Enabled        */
+								/* CCI          : 0    - (Read only)                                */
+								/* OUT          : 0    - Output mode 0, Output - Low                */
+								/* COV          : 0    - Capture overflow - No capture overflow     */
+								/* CCIFG        : 0    - Capture/Compare interrupt flag (Read only) */
+
+		TACCR0  = TMR_A_22_SEC_CCR0;    /* TACCRx       : Compare mode Timer value                  */
+
+		TACTL   = TASSEL_1 + ID_1 + MC_1;
+								/* Unused       : 000000                                            */
+								/* TASSELx      : 01     - Clock source - ACLK                      */
+								/* IDx          : 01     - Input divider - 2                        */
+								/* MCx          : 01     - Mode control - Up mode                   */
+								/* Unused       : 0                                                 */
+								/* TACLR        : 0      - Timer Clear - Not cleared                */
+								/* TAIE         : 0      - Timer Interrupt - Interrupt disabled     */
+								/* TAIFG        : 0      - Timer Interrupt flag                     */
+
+		__bis_SR_register(GIE); /* Enable Global Interrupts                                         */
+	}else{                            /* Touchpad mode                                              */
+		;
+	}
 }
 
 inline void TmrA_IntEnable()
@@ -177,258 +239,265 @@ void __attribute__ ((interrupt(TIMERA0_VECTOR))) TmrA_Isr (void)
     INT08U ret = 0;
     BOOLEAN bret;
 
-    if (timer_a_divider == TMR_A_BAT_CHRG_DIVIDER){
-        timer_a_divider = 0;
+    if(timer_a_mode != TMR_A_MODE_22_SEC){								// If this is not the 20 sec timing mode
+		if (timer_a_divider == TMR_A_BAT_CHRG_DIVIDER){
+			timer_a_divider = 0;
 
 #ifdef USE_BQ24160
-        /* #####################################################################
-		 *  Check for faults
-		 * ###################################################################*/
-        statCtrlReg = BQ24160_GetStatCtrlReg();
-        batSplyStatReg = BQ24160_GetBatStatReg();
-        NTCReg = BQ24160_GetTmrNTCReg();
-        if(NTCReg == 0){
-        	return;
-        }
+			/* #####################################################################
+			 *  Check for faults
+			 * ###################################################################*/
+			NTCReg = BQ24160_GetTmrNTCReg();
+			if(NTCReg == 0){
+				return;
+			}
+			statCtrlReg = BQ24160_GetStatCtrlReg();
+			batSplyStatReg = BQ24160_GetBatStatReg();
 
-        bret = BQ24160_handle_faults(statCtrlReg,batSplyStatReg,NTCReg);
-        if(bret == FALSE){
-        	return;
-        }
-
-
-        /* #####################################################################
-		 *  Check for status
-		 * ###################################################################*/
-        chgrStatus = statCtrlReg & 0x70;
-        DPPMReg = BQ24160_GetDPPMReg();
-		MINSYSMode = DPPMReg & BQ24160_MINSYS_STATUS;
-		VINDPMMode = DPPMReg & BQ24160_DPM_STATUS;
-
-		if(chgrStatus == BQ24160_STAT_FAULT){
-			#ifdef ENABLE_CHRG_TONE
-			Sys_BeepHigh(100);
-			#endif
-
-			bret = BQ24160_ChargerInit(BQ24160_IUSB_LIMIT_NA);
+			bret = BQ24160_handle_faults(statCtrlReg,batSplyStatReg,NTCReg);
 			if(bret == FALSE){
 				return;
 			}
 
-			bret = BQ24160_ChargerEnable(BQ24160_IUSB_LIMIT_NA);
-			if(bret == FALSE){
-				return;
-			}
-		}else if(chgrStatus == BQ24160_STAT_CHARGE_DONE){
-			if(chgrDnBeep){
-				Sys_BeepHigh(500);
+
+			/* #####################################################################
+			 *  Check for status
+			 * ###################################################################*/
+			chgrStatus = statCtrlReg & 0x70;
+			DPPMReg = BQ24160_GetDPPMReg();
+			MINSYSMode = DPPMReg & BQ24160_MINSYS_STATUS;
+			VINDPMMode = DPPMReg & BQ24160_DPM_STATUS;
+
+			if(chgrStatus == BQ24160_STAT_FAULT){
+				#ifdef ENABLE_CHRG_TONE
+				Sys_BeepHigh(100);
+				#endif
+
+				bret = BQ24160_ChargerInit(BQ24160_IUSB_LIMIT_NA);
+				if(bret == FALSE){
+					return;
+				}
+
+				bret = BQ24160_ChargerEnable(BQ24160_IUSB_LIMIT_NA);
+				if(bret == FALSE){
+					return;
+				}
+			}else if(chgrStatus == BQ24160_STAT_CHARGE_DONE){
+				if(chgrDnBeep){
+					Sys_BeepHigh(500);
+					Sys_DelayMs(200);
+					Sys_BeepHigh(500);
+					chgrDnBeep = FALSE;
+				}else{}
+
+			}else if(MINSYSMode){
+				#ifdef ENABLE_CHRG_TONE
+				Sys_BeepHigh(100);
 				Sys_DelayMs(200);
-				Sys_BeepHigh(500);
-				chgrDnBeep = FALSE;
+				Sys_BeepHigh(100);
+				Sys_DelayMs(200);
+				Sys_BeepHigh(100);
+				#endif
+			}else if(VINDPMMode){
+				#ifdef ENABLE_CHRG_TONE
+				Sys_BeepHigh(100);
+				Sys_DelayMs(200);
+				Sys_BeepHigh(100);
+				Sys_DelayMs(200);
+				Sys_BeepHigh(100);
+				Sys_DelayMs(200);
+				Sys_BeepHigh(100);
+				#endif
 			}else{}
 
-		}else if(MINSYSMode){
-			#ifdef ENABLE_CHRG_TONE
-			Sys_BeepHigh(100);
-			Sys_DelayMs(200);
-			Sys_BeepHigh(100);
-			Sys_DelayMs(200);
-			Sys_BeepHigh(100);
+			#ifdef CHK_DEFAULT_PARAMS
+			if(BQ24160_is_default_params_det()){
+				bret = BQ24160_ChargerInit(BQ24160_IUSB_LIMIT_NA);
+				if(bret == FALSE){
+					return;
+				}
+
+				bret = BQ24160_ChargerEnable(BQ24160_IUSB_LIMIT_NA);
+				if(bret == FALSE){
+					return;
+				}
+			}
 			#endif
-		}else if(VINDPMMode){
-			#ifdef ENABLE_CHRG_TONE
-			Sys_BeepHigh(100);
-			Sys_DelayMs(200);
-			Sys_BeepHigh(100);
-			Sys_DelayMs(200);
-			Sys_BeepHigh(100);
-			Sys_DelayMs(200);
-			Sys_BeepHigh(100);
-			#endif
-		}else{}
-
-		#ifdef CHK_DEFAULT_PARAMS
-        if(BQ24160_is_default_params_det()){
-			bret = BQ24160_ChargerInit(BQ24160_IUSB_LIMIT_NA);
-			if(bret == FALSE){
-				return;
-			}
-
-			bret = BQ24160_ChargerEnable(BQ24160_IUSB_LIMIT_NA);
-			if(bret == FALSE){
-				return;
-			}
-        }
-		#endif
 
 
-        /* #####################################################################
-		 *  Watchdog timer reset
-		 * ###################################################################*/
-		buf_wr[0] = BQ24160_SAT_CNTRL_REG;
-		buf_wr[1] = BQ24160_TMR_RST + BQ24160_SUPPLY_SEL;
-   	   							/* B3 (SUPPLY_SEL = 1) - USB has precedence when both supplies are connected    */
-		do{
-			ret = I2C_Write (I2C_0_HANDLE, BQ24150A_I2C_ADDR, buf_wr, 2);
-			if(ret == I2C_FAULT){
-				return;
-			}
-		}while (ret == I2C_BUSY);
+			/* #####################################################################
+			 *  Watchdog timer reset
+			 * ###################################################################*/
+			buf_wr[0] = BQ24160_SAT_CNTRL_REG;
+			buf_wr[1] = BQ24160_TMR_RST + BQ24160_SUPPLY_SEL;
+									/* B3 (SUPPLY_SEL = 1) - USB has precedence when both supplies are connected    */
+			do{
+				ret = I2C_Write (I2C_0_HANDLE, BQ24150A_I2C_ADDR, buf_wr, 2);
+				if(ret == I2C_FAULT){
+					return;
+				}
+			}while (ret == I2C_BUSY);
 
 #else /* if bq24150a */
 
-        /* #####################################################################
-         * Get Charger Status
-         * ###################################################################*/
-        ret = BQ24150A_GetStatus();
+			/* #####################################################################
+			 * Get Charger Status
+			 * ###################################################################*/
+			ret = BQ24150A_GetStatus();
 
-        /*if(ret == 0){   // Commented due to not reading some bits at status reg through I2C
-        	return;
-        }*/
-
-		/* In any FAULT conditions, re-start charge */
-		#ifdef CHK_DEFAULT_PARAMS
-		if(((ret & 0x07) != BQ24150A_FAULT_NORMAL) || ((ret & 0x30) == BQ24150A_STAT_FAULT) || (BQ24150A_is_default_params_det()))
-		#else
-		if(((ret & 0x07) != BQ24150A_FAULT_NORMAL) || ((ret & 0x30) == BQ24150A_STAT_FAULT))
-		#endif
-		{
-			bret =BQ24150A_ChargerInit(BQ24150A_I_IN_LIMIT_NO);
-			if(bret == FALSE){
+			/*if(ret == 0){   // Commented due to not reading some bits at status reg through I2C
 				return;
-			}
-		}
+			}*/
 
-		switch (ret & 0x30){  /* Bit 5,4 = STAT2, STAT1 */
-			case BQ24150A_STAT_READY:
+			/* In any FAULT conditions, re-start charge */
+			#ifdef CHK_DEFAULT_PARAMS
+			if(((ret & 0x07) != BQ24150A_FAULT_NORMAL) || ((ret & 0x30) == BQ24150A_STAT_FAULT) || (BQ24150A_is_default_params_det()))
+			#else
+			if(((ret & 0x07) != BQ24150A_FAULT_NORMAL) || ((ret & 0x30) == BQ24150A_STAT_FAULT))
+			#endif
 			{
-				break;
+				bret =BQ24150A_ChargerInit(BQ24150A_I_IN_LIMIT_NO);
+				if(bret == FALSE){
+					return;
+				}
 			}
-			case BQ24150A_STAT_CHARGE_IN_PROGRESS:
-			{
-				#ifdef ENABLE_CHRG_TONE
-				Sys_BeepHigh(20);
-				Sys_DelayMs(200);
-				Sys_BeepHigh(20);
-				#endif
-				break;
+
+			switch (ret & 0x30){  /* Bit 5,4 = STAT2, STAT1 */
+				case BQ24150A_STAT_READY:
+				{
+					break;
+				}
+				case BQ24150A_STAT_CHARGE_IN_PROGRESS:
+				{
+					#ifdef ENABLE_CHRG_TONE
+					Sys_BeepHigh(20);
+					Sys_DelayMs(200);
+					Sys_BeepHigh(20);
+					#endif
+					break;
+				}
+				case BQ24150A_STAT_CHARGE_DONE:
+				{
+					#ifdef ENABLE_CHRG_TONE
+					Sys_BeepHigh(20);
+					Sys_DelayMs(200);
+					Sys_BeepHigh(20);
+					Sys_DelayMs(200);
+					Sys_BeepHigh(20);
+					#endif
+					break;
+				}
+				case BQ24150A_STAT_FAULT:
+				{
+					#ifdef ENABLE_CHRG_TONE
+					Sys_BeepHigh(20);
+					Sys_DelayMs(200);
+					Sys_BeepHigh(20);
+					Sys_DelayMs(200);
+					Sys_BeepHigh(20);
+					Sys_DelayMs(200);
+					Sys_BeepHigh(20);
+					#endif
+					break;
+				}
+				default:
+				{
+					#ifdef ENABLE_CHRG_TONE
+					Sys_BeepHigh(250);
+					Sys_DelayMs(200);
+					Sys_BeepHigh(250);
+					#endif
+					break;
+				}
 			}
-			case BQ24150A_STAT_CHARGE_DONE:
-			{
-				#ifdef ENABLE_CHRG_TONE
-				Sys_BeepHigh(20);
-				Sys_DelayMs(200);
-				Sys_BeepHigh(20);
-				Sys_DelayMs(200);
-				Sys_BeepHigh(20);
-				#endif
-				break;
-			}
-			case BQ24150A_STAT_FAULT:
-			{
-				#ifdef ENABLE_CHRG_TONE
-				Sys_BeepHigh(20);
-				Sys_DelayMs(200);
-				Sys_BeepHigh(20);
-				Sys_DelayMs(200);
-				Sys_BeepHigh(20);
-				Sys_DelayMs(200);
-				Sys_BeepHigh(20);
-				#endif
-				break;
-			}
-			default:
-			{
-				#ifdef ENABLE_CHRG_TONE
-				Sys_BeepHigh(250);
-				Sys_DelayMs(200);
-				Sys_BeepHigh(250);
-				#endif
-				break;
-			}
-		}
 
-        /* #####################################################################
-         *  32sec timer reset
-         * ###################################################################*/
-        buf_wr[0] = BQ24150A_SAT_CNTRL_REG;                               /* Status Register address         */
-        buf_wr[1] = BQ24150A_TMR_RST_OTG + BQ24150A_EN_STAT;			  // Status register bits B6 - EN_STAT, (B5,B4) - Charge status bits are not properly maintained
-        do{
-            ret = I2C_Write (I2C_0_HANDLE, BQ24150A_I2C_ADDR, buf_wr, 2);
-            if(ret == I2C_FAULT){
-            	return;
-            }
-        }while (ret == I2C_BUSY);
+			/* #####################################################################
+			 *  32sec timer reset
+			 * ###################################################################*/
+			buf_wr[0] = BQ24150A_SAT_CNTRL_REG;                               /* Status Register address         */
+			buf_wr[1] = BQ24150A_TMR_RST_OTG + BQ24150A_EN_STAT;			  // Status register bits B6 - EN_STAT, (B5,B4) - Charge status bits are not properly maintained
+			do{
+				ret = I2C_Write (I2C_0_HANDLE, BQ24150A_I2C_ADDR, buf_wr, 2);
+				if(ret == I2C_FAULT){
+					return;
+				}
+			}while (ret == I2C_BUSY);
 
 
-       /* ######################################################################
-        *   Read battery level
-        * ####################################################################*/
-       bat_level = Bat_GetBatteryLevel();
-       if(bat_level == BAT_LEVEL_ERROR){
-    	   return;
-       }
 
-       if(BAT_LEVEL_SHORT_CCT == bat_level){
-    	   #ifdef ENABLE_CHRG_TONE
-    	   /* BAT_SHORT_CCT beeps */
-    	   Sys_BeepHigh(50);
-    	   Sys_DelayMs(200);
-    	   Sys_BeepHigh(50);
-    	   Sys_DelayMs(200);
-    	   Sys_BeepHigh(50);
-    	   Sys_DelayMs(200);
-    	   Sys_BeepHigh(50);
-		   #endif
-
-           bret =BQ24150A_ChargerEnable();
-		   if(bret == FALSE){
+		   /* ######################################################################
+			*   Read battery level
+			* ####################################################################*/
+		   bat_level = Bat_GetBatteryLevel();
+		   if(bat_level == BAT_LEVEL_ERROR){
 			   return;
 		   }
-       }
-       else if(BAT_LEVEL_DEAD == bat_level){
-    	   #ifdef ENABLE_CHRG_TONE
-    	   /* BAT_DEAD beeps */
-    	   Sys_BeepHigh(50);
-    	   Sys_DelayMs(200);
-    	   Sys_BeepHigh(50);
-    	   Sys_DelayMs(200);
-    	   Sys_BeepHigh(50);
-		   #endif
 
-    	   bret =BQ24150A_ChargerEnable();
-		   if(bret == FALSE){
-			   return;
-		   }
-       }
-       else if(BAT_LEVEL_WEAK == bat_level){
-		   #ifdef ENABLE_CHRG_TONE
-    	   /* BAT_WEAK beeps */
-    	   Sys_BeepHigh(50);
-    	   Sys_DelayMs(200);
-    	   Sys_BeepHigh(50);
-		   #endif
+		   if(BAT_LEVEL_SHORT_CCT == bat_level){
+			   #ifdef ENABLE_CHRG_TONE
+			   /* BAT_SHORT_CCT beeps */
+			   Sys_BeepHigh(50);
+			   Sys_DelayMs(200);
+			   Sys_BeepHigh(50);
+			   Sys_DelayMs(200);
+			   Sys_BeepHigh(50);
+			   Sys_DelayMs(200);
+			   Sys_BeepHigh(50);
+			   #endif
 
-    	   bret =BQ24150A_ChargerEnable();
-		   if(bret == FALSE){
-			   return;
+			   bret =BQ24150A_ChargerEnable();
+			   if(bret == FALSE){
+				   return;
+			   }
 		   }
-	   }
-       else if(BAT_LEVEL_GOOD == bat_level){
-    	   bret =BQ24150A_ChargerEnable();
-    	   if(bret == FALSE){
-    		   return;
-    	   }
-	   }
-       else if(BAT_LEVEL_FULL == bat_level){
-			bret = BQ24150A_ChargerDisable();	/* If the battery level is FULL threshold then disable charging */
-			if(bret == FALSE){
-				return;
-			}
-       }else{}
+		   else if(BAT_LEVEL_DEAD == bat_level){
+			   #ifdef ENABLE_CHRG_TONE
+			   /* BAT_DEAD beeps */
+			   Sys_BeepHigh(50);
+			   Sys_DelayMs(200);
+			   Sys_BeepHigh(50);
+			   Sys_DelayMs(200);
+			   Sys_BeepHigh(50);
+			   #endif
+
+			   bret =BQ24150A_ChargerEnable();
+			   if(bret == FALSE){
+				   return;
+			   }
+		   }
+		   else if(BAT_LEVEL_WEAK == bat_level){
+			   #ifdef ENABLE_CHRG_TONE
+			   /* BAT_WEAK beeps */
+			   Sys_BeepHigh(50);
+			   Sys_DelayMs(200);
+			   Sys_BeepHigh(50);
+			   #endif
+
+			   bret =BQ24150A_ChargerEnable();
+			   if(bret == FALSE){
+				   return;
+			   }
+		   }
+		   else if(BAT_LEVEL_GOOD == bat_level){
+			   bret =BQ24150A_ChargerEnable();
+			   if(bret == FALSE){
+				   return;
+			   }
+		   }
+		   else if(BAT_LEVEL_FULL == bat_level){
+				bret = BQ24150A_ChargerDisable();	/* If the battery level is FULL threshold then disable charging */
+				if(bret == FALSE){
+					return;
+				}
+		   }else{}
 #endif /* USE_BQ24160 */
-    }
-    else{
-        timer_a_divider++;
+		}
+		else{
+			timer_a_divider++;
+		}
+    }else{			// 20 sec timing mode
+    	I2C_Init();								   /* Re-init pins to I2C                                                 */
+    	i2c_timeout_count = 0;
+    	TmrA_Init(TMR_A_MODE_BAT_CHARGER);
     }
 }

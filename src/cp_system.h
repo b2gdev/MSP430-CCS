@@ -104,8 +104,6 @@ extern INT32U TmrB_heartbeat;
 #define BOARD_ID_0              (P8IN & P0)             /* P8.0         */
 #define BOARD_ID_1              (P8IN & P1)             /* P8.1         */
 #define BOARD_ID_2              (P8IN & P2)             /* P8.2         */
-#define BOARD_ID_3              (P8IN & P3)             /* P8.3         */
-#define BOARD_ID_4              (P8IN & P4)             /* P8.4         */
 #define ACC_INT                 (P2IN & P2)             /* P2.2         */
 // #define BUZZER_EN            P5OUT_bit.P3            /* P5.3         */
 //#define CP_PWRSW_nFAULT       P8OUT_bit.P6            /* P8.6 (Output only pin */

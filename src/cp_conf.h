@@ -95,7 +95,7 @@
 #define P7         (1L << 7)
 
 /*  Firmware Version */
-#define     FW_VERSION_MAJOR    0x02        /* V2.0                                               */
+#define     FW_VERSION_MAJOR    0x03        /* V3.0                                               */
 #define     FW_VERSION_MINOR    0x00
 
 /*  Supported Features  */

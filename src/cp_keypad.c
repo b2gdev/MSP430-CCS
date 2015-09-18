@@ -265,18 +265,18 @@ void  Kpd_ReadEx (void)
                 KEYPAD_MainKeys = KEYPAD_MainKeys_Buf[i];                  
                 
                 if ((KEYPAD_MainKeys & 0xFFFFFFFF) != (prev_main_keys & 0xFFFFFFFF)) {
-                    
-                    /*{KW}:: test long power button press */
-                    #ifdef PWR_OFF_KEY_COMBINATION_DEFINED /*{KW}: define a proper pwr off combination */
-                    if (((KEYPAD_MainKeys & PWR_SHUTDOWN_COMB) == PWR_SHUTDOWN_COMB) && ((KEYPAD_MainKeys & PWR_SHUTDOWN_COMB) != (prev_main_keys & PWR_SHUTDOWN_COMB))) {
-                       if((power_off_pressed == 0) && (Pwr_Get_CC_Pwr_Status() != CC_PWR_OFF))
-                       {
-                         CC_CP_PWRON_HIGH();
-                         time_stamp_start = Sys_Get_Heartbeat();
-                         power_off_pressed = 1;               
-                       }
-                    } 
-                    #endif
+
+                	/*{KW}:: test long power button press */
+					#ifdef PWR_OFF_KEY_COMBINATION_DEFINED /*{KW}: define a proper pwr off combination */
+					if (((KEYPAD_MainKeys & PWR_SHUTDOWN_COMB) == PWR_SHUTDOWN_COMB) && ((KEYPAD_MainKeys & PWR_SHUTDOWN_COMB) != (prev_main_keys & PWR_SHUTDOWN_COMB))) {
+					   if((power_off_pressed == 0) && (Pwr_Get_CC_Pwr_Status() != CC_PWR_OFF))
+					   {
+						 CC_CP_PWRON_HIGH();
+						 time_stamp_start = Sys_Get_Heartbeat();
+						 power_off_pressed = 1;
+					   }
+					}
+					#endif
                     
                     /*{KW}:: test 8s reset power button press */
                     #ifdef PWR_RESET_KEY_COMBINATION_DEFINED /*{KW}: define a proper pwr off combination */

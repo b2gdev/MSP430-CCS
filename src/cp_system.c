@@ -249,17 +249,7 @@ void  Sys_GpioInit (void)
     /* BOARD_ID_2 */
     BIT_CLR(P8DIR,P2);     /* Input                                                                */
     BIT_CLR(P8SEL,P2);     /* I/O function                                                         */
-    BIT_CLR(P8REN,P2);     /* Pullup/Pulldown disabled                                             */    
-
-    /* BOARD_ID_3 */
-    BIT_CLR(P8DIR,P3);     /* Input                                                                */
-    BIT_CLR(P8SEL,P3);     /* I/O function                                                         */
-    BIT_CLR(P8REN,P3);     /* Pullup/Pulldown disabled                                             */    
-
-    /* BOARD_ID_4 */
-    BIT_CLR(P8DIR,P4);     /* Input                                                                */
-    BIT_CLR(P8SEL,P4);     /* I/O function                                                         */
-    BIT_CLR(P8REN,P4);     /* Pullup/Pulldown disabled                                             */
+    BIT_CLR(P8REN,P2);     /* Pullup/Pulldown disabled                                             */
     
     /* ACC_INT */
     BIT_CLR(P2DIR,P2);     /* Input                                                                */
