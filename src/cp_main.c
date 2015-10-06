@@ -71,7 +71,7 @@
 *   LOCAL VARIABLES
 *********************************************************************************************************
 */
-INT08U battery_level        = 0x00;
+BOOLEAN hold_at_reset       = 1;
 
 BOOLEAN is_power_switch_on  = 0;
 
@@ -144,68 +144,45 @@ int  main (void)
 
 	TmrA_Init(TMR_A_MODE_BAT_CHARGER);
 
-    #ifdef ENABLE_BATTERY
 	Sys_DelayMs(500);
 	Sys_DelayMs(500);
-	battery_level = Bat_GetInitialBatteryLevel();
-    #else
-    battery_level = BAT_LEVEL_GOOD;
-    #endif
-    Pwr_SwConf();
 
-    switch (battery_level){
-    	case BAT_LEVEL_SHORT_CCT:
-    	case BAT_LEVEL_DEAD:
-    	case BAT_LEVEL_WEAK:
-    	{
-			/* Wait until chrger detected */
-			while (!CP_VBUS_OTG_DET){
-				 __low_power_mode_4();			/* Stay at LMP4 and awake when charger is plugged           */
-				Sys_DelayMs(250);
-			}
+	Pwr_SwConf();
+
+	Pwr_ChargerPowerEnable();
+
+	#ifdef  ENABLE_KEYPAD
+	Kpd_Init();                 		/* Initialize keypad         	                            */
+	TmrB_Init();                		/* Initialize keypad sampling timer    		                */
+	#endif
+
+	Sys_DelayMs(250);
+
+	/* Wait for power key OFF to ON transition */
+	while(hold_at_reset){
+    	if(CP_VBUS_OTG_DET){
+    		__low_power_mode_3();		/* Stay at LMP3 to support chrging when charger is plugged  */
     	}
-    	case BAT_LEVEL_GOOD:
-    	case BAT_LEVEL_FULL:
-		{
-			Pwr_ChargerPowerEnable();
-
-			#ifdef  ENABLE_KEYPAD
-			Kpd_Init();                 		/* Initialize keypad         	                            */
-			TmrB_Init();                		/* Initialize keypad sampling timer    		                */
-			#endif
-
-			/* Wait for power key OFF to ON transition */
-			while(PWR_SW)
-				Sys_DelayMs(10);
-			while(!PWR_SW)
-				Sys_DelayMs(50);
-
-			Sys_BeepHigh(100);    				/* System bootup indication Beep1			                */
-
-			is_power_switch_on = PWR_SW; 		/* Initial status of the power switch              			*/
-
-			Pwr_SystemPowerEnable();			/* This will power on the main processor.Place this after
-												   switch transition										*/
-
-			CP_PWR01_ENABLE();             		/* Enable Braille display                        			*/
-
-			#ifdef ENABLE_DISPLAY
-			Brd_Init();                 		/* Initialize Braille display                               */
-			BRD_ENABLE();
-			#endif
-
-			#ifdef ENABLE_HOST_INTERFACE
-			EN_1V8_3V3_LVL_TR();     			/* Enable 1.8V to 3.3V translator 							*/
-			Sys_DelayMs(1000);
-			#endif
-			break;
+		else{
+			__low_power_mode_4();		/* Stay at LMP4 to when charger is not plugged 				*/
 		}
-        default:
-		{
-			break;
-		}
-    }/* end of switch case */
+    	Sys_DelayMs(250);
+    }
 
+	Pwr_SystemPowerEnable();			/* This will power on the main processor.Place this after
+										   switch transition										*/
+
+	CP_PWR01_ENABLE();             		/* Enable Braille display                        			*/
+
+	#ifdef ENABLE_DISPLAY
+	Brd_Init();                 		/* Initialize Braille display                               */
+	BRD_ENABLE();
+	#endif
+
+	#ifdef ENABLE_HOST_INTERFACE
+	EN_1V8_3V3_LVL_TR();     			/* Enable 1.8V to 3.3V translator 							*/
+	Sys_DelayMs(1000);
+	#endif
     
     while (1)
     {

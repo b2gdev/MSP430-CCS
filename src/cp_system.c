@@ -558,6 +558,7 @@ void __attribute__ ((interrupt(PORT2_VECTOR))) Port_2isr (void)
 				CC_CP_PWRON_HIGH();
 				time_stamp_start = Sys_Get_Heartbeat();
 				power_switch_toggle = 1;
+				hold_at_reset = 0;
 				__low_power_mode_off_on_exit(); /* Exit LPM                                            */
 			}else{}
 

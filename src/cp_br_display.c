@@ -71,6 +71,7 @@
 */
 static INT08U   brd_disp_buf[BRD_DISP_BUF_SIZE];            /* Local Braille display buffer         */
 static INT08U   brd_key_buf[BRD_KEY_BUF_SIZE];              /* Local Key buffer                     */   
+BOOLEAN user_disabled_brd = 0;
 
 /*
 *********************************************************************************************************
@@ -228,10 +229,13 @@ void Brd_Pwr_Update(INT08U pwr_status)
   if(pwr_status == CC_PWR_OFF){
     Brd_ClearDisplay();
     BRD_DISABLE();
+    user_disabled_brd = 0;
     CP_PWR01_DISABLE(); /*{KW}: Brd power supply disable */
   }
   else if((is_power_switch_on || (pwr_status == CC_PWR_ACTIVE)) && (pwr_status != CC_PWR_OFF)){
-    BRD_ENABLE();  
+	if(!user_disabled_brd){
+		BRD_ENABLE();
+	}
   }
   else{
     Brd_ClearDisplay();
@@ -250,8 +254,11 @@ void  Brd_ClearDisplay(void)
 void  Brd_Conrol (INT08U control){
 	if(control == DISPLAY_ENABLE){
 		BRD_ENABLE();
-	}else
+		user_disabled_brd = 0;
+	}else{
 		BRD_DISABLE();
+		user_disabled_brd = 1;
+	}
 }
 
 

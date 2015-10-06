@@ -95,8 +95,8 @@
 #define P7         (1L << 7)
 
 /*  Firmware Version */
-#define     FW_VERSION_MAJOR    0x03        /* V3.0                                               */
-#define     FW_VERSION_MINOR    0x00
+#define     FW_VERSION_MAJOR    0x03        /* V3.1                                               */
+#define     FW_VERSION_MINOR    0x01
 
 /*  Supported Features  */
 #define     ENABLE_BATTERY
