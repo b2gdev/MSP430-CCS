@@ -52,6 +52,8 @@
 #define     DEV_MISC		        0x06
 
 #define     CMD_CP430_GET_STATUS    ((DEV_CP430   << 8) + 0x01)
+#define     CMD_CP430_GET_SEGMENT   ((DEV_CP430   << 8) + 0x02)
+#define     CMD_CP430_GET_METADATA  ((DEV_CP430   << 8) + 0x03)
 
 #define     CMD_KEYPAD_GET_STATUS   ((DEV_KEYPAD  << 8) + 0x01)
 
@@ -68,13 +70,17 @@
 #define     STX2                    0x50
 #define     ETX                     0x45
 
-#define     MAX_DATA_BUF_SIZE       256
+#define     MAX_DATA_BUF_SIZE       0x201
 
 #define		RCVD_DATA_LEN_STATUS_REQUEST 	0x00
 #define		RCVD_DATA_LEN_DISP_ON_OFF		0x01
 #define		RCVD_DATA_LEN_DISP_WRITE		0x18
 #define		RCVD_DATA_LEN_PWR_STATUS		0x01
+#define		RCVD_DATA_LEN_GET_SEGMENT		0x201
+#define		RCVD_DATA_LEN_GET_METADATA		0x24
 
+#define		ACK_CHAR				0x00
+#define 	NACK_CHAR				0xFF
 
 /*
 *********************************************************************************************************
@@ -117,6 +123,7 @@ INT08U active_tx_checksum;
 *********************************************************************************************************
 */
 INT16U getDataLength (void);
+void generateReplyPacket (INT08U ackchar);
 
 /*
 *********************************************************************************************************
@@ -269,19 +276,44 @@ void  Cmd_RxCommandProcess (void)
                                     active_tx_checksum+= 0x00;
                                     active_tx_checksum+= 0x04;
                                     
-                                    Cbuf_Write(&SPI_1_TransmitBuffer, FW_VERSION_MAJOR);
-                                    Cbuf_Write(&SPI_1_TransmitBuffer, FW_VERSION_MINOR);
-                                    Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
-                                    Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
+                                    Cbuf_Write(&SPI_1_TransmitBuffer, get_fw_ver_major());
+                                    Cbuf_Write(&SPI_1_TransmitBuffer, get_fw_ver_minor());
+                                    Cbuf_Write(&SPI_1_TransmitBuffer, get_other_code_fw_major());
+                                    Cbuf_Write(&SPI_1_TransmitBuffer, get_other_code_fw_minor());
                                     
-                                    active_tx_checksum+= FW_VERSION_MAJOR;
-                                    active_tx_checksum+= FW_VERSION_MINOR;
-                                    active_tx_checksum+= 0x00;
-                                    active_tx_checksum+= 0x00;
+                                    active_tx_checksum+= get_fw_ver_major();
+                                    active_tx_checksum+= get_fw_ver_minor();
+                                    active_tx_checksum+= get_other_code_fw_major();
+                                    active_tx_checksum+= get_other_code_fw_minor();
 
                                     break;
                                 }
                                 
+                            case CMD_CP430_GET_SEGMENT:
+							{
+								if(copy_one_seg_from_spi_data(active_rx_data)){
+									generateReplyPacket(ACK_CHAR);
+								}else{
+									generateReplyPacket(NACK_CHAR);
+								}
+
+								break;
+							}
+
+                            case CMD_CP430_GET_METADATA:
+							{
+								copy_metadata(active_rx_data);
+								if(validate_metadata()){
+									generateReplyPacket(ACK_CHAR);
+									meta_data_ok = TRUE;
+									meta_data_ack_sent = FALSE;
+								}else{
+									generateReplyPacket(NACK_CHAR);
+								}
+
+								break;
+							}
+
                             case CMD_KEYPAD_GET_STATUS:
                                 {
                                     Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
@@ -316,14 +348,7 @@ void  Cmd_RxCommandProcess (void)
 								if((active_rx_data[0] == DISPLAY_ENABLE) || (active_rx_data[0] == DISPLAY_DISABLE))
 									Brd_Conrol(active_rx_data[0]);
 
-								Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
-								active_tx_checksum+= 0x00;
-
-								Cbuf_Write(&SPI_1_TransmitBuffer, 0x01);
-								active_tx_checksum+= 0x01;
-
-								Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
-								active_tx_checksum+= 0x00;
+								generateReplyPacket(ACK_CHAR);
 
 								break;
 							}
@@ -332,14 +357,7 @@ void  Cmd_RxCommandProcess (void)
                                 {
                                     Brd_WriteDisplay(active_rx_data);                                  
                                     
-                                    Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
-                                    active_tx_checksum+= 0x00;
-
-                                    Cbuf_Write(&SPI_1_TransmitBuffer, 0x01);
-                                    active_tx_checksum+= 0x01;
-                                    
-                                    Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
-                                    active_tx_checksum+= 0x00;
+                                    generateReplyPacket(ACK_CHAR);
 
                                     break;
                                 }
@@ -378,14 +396,7 @@ void  Cmd_RxCommandProcess (void)
                                     }
                                     
                                     /* prepare response packet data here (length = 0x0001, data = 0x00)  */
-                                    Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
-                                    active_tx_checksum+= 0x00;
-
-                                    Cbuf_Write(&SPI_1_TransmitBuffer, 0x01);
-                                    active_tx_checksum+= 0x01;
-                                    
-                                    Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
-                                    active_tx_checksum+= 0x00;
+                                    generateReplyPacket(ACK_CHAR);
 
                                     break;
                                 }
@@ -496,7 +507,23 @@ INT16U getDataLength (void)
 		return RCVD_DATA_LEN_DISP_WRITE;
 	}else if (packetType == CMD_UPDATE_CC_PWR_STATUS){
 		return RCVD_DATA_LEN_PWR_STATUS;
+	}else if (packetType == CMD_CP430_GET_SEGMENT){
+		return RCVD_DATA_LEN_GET_SEGMENT;
+	}else if (packetType == CMD_CP430_GET_METADATA){
+		return RCVD_DATA_LEN_GET_METADATA;
 	}else{
 		return 0;				//Undefined packet type
 	}
+}
+
+void generateReplyPacket (INT08U ackchar)
+{
+	Cbuf_Write(&SPI_1_TransmitBuffer, 0x00);
+	active_tx_checksum+= 0x00;
+
+	Cbuf_Write(&SPI_1_TransmitBuffer, 0x01);				// Length =	1
+	active_tx_checksum+= 0x01;
+
+	Cbuf_Write(&SPI_1_TransmitBuffer, ackchar);				// ACK or NACK
+	active_tx_checksum+= ackchar;
 }

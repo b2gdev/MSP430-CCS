@@ -106,6 +106,33 @@ typedef struct
     INT08U *data;           /* data                                             */
 } CIRC_BUFFER;
 
+/* Data related to firmware update */
+typedef struct
+{
+	INT32U copy_func_start_loc;				/* Start location copying function              */
+	INT16U copy_func_code_size;				/* Code size copying function                   */
+	INT08U copy_func_code_checksum;			/* Checksum copying function                    */
+	INT32U main_mem_start_loc;				/* Start location of the code in first 64KB     */
+	INT16U main_mem_code_size;				/* Code size of first 64KB of the memory        */
+	INT08U main_mem_code_checksum;			/* Checksum  of first 64KB of the memory        */
+	INT32U isr_mem_start_loc;				/* ISR memory code start location               */
+	INT16U isr_mem_code_size;				/* ISR memory code size                         */
+	INT08U isr_mem_code_checksum;			/* Checksum - ISR vectors                       */
+	INT32U ext_mem_start_loc;				/* Start location of the code after first 64KB  */
+	INT16U ext_mem_code_size;				/* Code size after first 64KB                   */
+	INT08U ext_mem_code_checksum;			/* Checksum  size after first 64KB              */
+	INT08U fw_ver_major;					/* Firmware Version - Major						*/
+	INT08U fw_ver_minor;					/* Firmware Version - Minor						*/
+	INT16U reset_address;					/* Reset address of this version				*/
+} CODE_DATA_STR;
+
+/* Base code FW Version */
+typedef struct
+{
+	INT08U fw_ver_major;					/* Firmware Version - Major						*/
+	INT08U fw_ver_minor;					/* Firmware Version - Minor						*/
+}BASE_CODE_FW_VER_STR;
+
 /*
 *********************************************************************************************************
 *   GLOBAL VARIABLES

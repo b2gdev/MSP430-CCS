@@ -41,13 +41,15 @@ MEMORY {
   SFR              : ORIGIN = 0x0000, LENGTH = 0x0010 /* END=0x0010, size 16 */
   PERIPHERAL_8BIT  : ORIGIN = 0x0010, LENGTH = 0x00F0 /* END=0x0100, size 240 */
   PERIPHERAL_16BIT : ORIGIN = 0x0100, LENGTH = 0x0100 /* END=0x0200, size 256 */
-  RAM              : ORIGIN = 0x1100, LENGTH = 0x2000 /* END=0x30FF, size 8192 */
+  COPY_FUNC_RAM    : ORIGIN = 0x1100, LENGTH = 0x0400 /* END=0x14FF, size 1024 */
+  RAM              : ORIGIN = 0x1500, LENGTH = 0x1C00 /* END=0x30FF, size 7168 */
   INFOMEM          : ORIGIN = 0x1000, LENGTH = 0x0100 /* END=0x10FF, size 256 as 4 64-byte segments */
   INFOA            : ORIGIN = 0x10C0, LENGTH = 0x0040 /* END=0x10FF, size 64 */
   INFOB            : ORIGIN = 0x1080, LENGTH = 0x0040 /* END=0x10BF, size 64 */
   INFOC            : ORIGIN = 0x1040, LENGTH = 0x0040 /* END=0x107F, size 64 */
   INFOD            : ORIGIN = 0x1000, LENGTH = 0x0040 /* END=0x103F, size 64 */
-  ROM (rx)         : ORIGIN = 0x3100, LENGTH = 0xCEBE /* END=0xFFBD, size 52926 */
+  COPYFUNC         : ORIGIN = 0x9400, LENGTH = 0x0400 /* END=0x97FF, size 1024  */
+  ROM (rx)         : ORIGIN = 0x9800, LENGTH = 0x67BE /* END=0xFFBD, size 26558 */
   VECT1            : ORIGIN = 0xFFC0, LENGTH = 0x0002
   VECT2            : ORIGIN = 0xFFC2, LENGTH = 0x0002
   VECT3            : ORIGIN = 0xFFC4, LENGTH = 0x0002
@@ -81,7 +83,7 @@ MEMORY {
   VECT31           : ORIGIN = 0xFFFC, LENGTH = 0x0002
   RESETVEC         : ORIGIN = 0xFFFE, LENGTH = 0x0002
   RAM_MIRROR       : ORIGIN = 0x0200, LENGTH = 0x0800
-  HIROM (rx)       : ORIGIN = 0x00010000, LENGTH = 0x0000FFFF
+  HIROM (rx)	   : ORIGIN = 0x00013000, LENGTH = 0x000031FF
 }
 
 SECTIONS
@@ -279,6 +281,11 @@ SECTIONS
     KEEP (*(.fini))
     KEEP (*(.tm_clone_table))
   } > ROM
+
+ .copyf :
+  {
+  	KEEP (*(.copyf))
+  } > COPY_FUNC_RAM AT> COPYFUNC
 
   .upper.text :
   {

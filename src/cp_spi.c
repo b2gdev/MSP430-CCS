@@ -174,6 +174,7 @@ void __attribute__ ((interrupt(USCIAB1TX_VECTOR))) SPI_TxIsr (void)
         }
         else{
             SPI_1_TX_INT_DISABLE();
+            meta_data_ack_sent = TRUE;
         }
         __low_power_mode_off_on_exit();
     }

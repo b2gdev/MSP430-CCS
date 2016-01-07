@@ -56,13 +56,15 @@ MEMORY
     SFR                     : origin = 0x0000, length = 0x0010
     PERIPHERALS_8BIT        : origin = 0x0010, length = 0x00F0
     PERIPHERALS_16BIT       : origin = 0x0100, length = 0x0100
-    RAM                     : origin = 0x1100, length = 0x2000
+    COPY_FUNC_RAM      		: origin = 0x1100, length = 0x0400
+    RAM              		: origin = 0x1500, length = 0x1C00
     INFOA                   : origin = 0x10C0, length = 0x0040
     INFOB                   : origin = 0x1080, length = 0x0040
     INFOC                   : origin = 0x1040, length = 0x0040
     INFOD                   : origin = 0x1000, length = 0x0040
-    FLASH                   : origin = 0x3100, length = 0xCEBE
-    FLASH2                  : origin = 0x10000,length = 0x10000
+  	COPYFUNC         		: origin = 0x9400, length = 0x0400
+    FLASH	           		: origin = 0x9800, length = 0x67BE
+    FLASH2					: origin = 0x13000, length = 0x31FF
     INT00                   : origin = 0xFFC0, length = 0x0002
     INT01                   : origin = 0xFFC2, length = 0x0002
     INT02                   : origin = 0xFFC4, length = 0x0002
@@ -121,6 +123,9 @@ SECTIONS
 #else
     .const      : {} > FLASH | FLASH2       /* Constant data                     */
 #endif
+	.copyf		: load = COPYFUNC, run = COPY_FUNC_RAM
+											/* Copy this function to RAM         */
+
     .cio        : {} > RAM                  /* C I/O Buffer                      */
 
     .pinit      : {} > FLASH                /* C++ Constructor tables            */
