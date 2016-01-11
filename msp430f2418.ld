@@ -31,7 +31,7 @@
 /* ============================================================================ */
 
 /* This file supports MSP430F2418 devices. */
-/* Version: 1.159 */
+/* Version: 1.167 */
 /* Default linker script, for normal executables */
 
 OUTPUT_ARCH(msp430)
@@ -47,7 +47,7 @@ MEMORY {
   INFOB            : ORIGIN = 0x1080, LENGTH = 0x0040 /* END=0x10BF, size 64 */
   INFOC            : ORIGIN = 0x1040, LENGTH = 0x0040 /* END=0x107F, size 64 */
   INFOD            : ORIGIN = 0x1000, LENGTH = 0x0040 /* END=0x103F, size 64 */
-  ROM (rx)         : ORIGIN = 0x3100, LENGTH = 0xCEBE /* END=0xFFBD, size 52926 */
+  ROM (rx)         : ORIGIN = 0x3100, LENGTH = 0x62FE /* END=0x93FD, size 25342 */
   VECT1            : ORIGIN = 0xFFC0, LENGTH = 0x0002
   VECT2            : ORIGIN = 0xFFC2, LENGTH = 0x0002
   VECT3            : ORIGIN = 0xFFC4, LENGTH = 0x0002
@@ -81,7 +81,7 @@ MEMORY {
   VECT31           : ORIGIN = 0xFFFC, LENGTH = 0x0002
   RESETVEC         : ORIGIN = 0xFFFE, LENGTH = 0x0002
   RAM_MIRROR       : ORIGIN = 0x0200, LENGTH = 0x0800
-  HIROM (rx)       : ORIGIN = 0x00010000, LENGTH = 0x0000FFFF
+  HIROM (rx)       : ORIGIN = 0x00010000, LENGTH = 0x000029FF
 }
 
 SECTIONS
@@ -117,9 +117,9 @@ SECTIONS
   __interrupt_vector_29  : { KEEP (*(__interrupt_vector_29)) KEEP (*(__interrupt_vector_timerb1)) } > VECT29
   __interrupt_vector_30  : { KEEP (*(__interrupt_vector_30)) KEEP (*(__interrupt_vector_timerb0)) } > VECT30
   __interrupt_vector_31  : { KEEP (*(__interrupt_vector_31)) KEEP (*(__interrupt_vector_nmi)) } > VECT31
-  __reset_vector : 
-  { 
-    KEEP (*(__interrupt_vector_32)) 
+  __reset_vector :
+  {
+    KEEP (*(__interrupt_vector_32))
     KEEP (*(__interrupt_vector_reset))
     KEEP (*(.resetvec))
   } > RESETVEC

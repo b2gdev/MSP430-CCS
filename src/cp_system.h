@@ -149,7 +149,7 @@ void Sys_ShutDownLPInit(void);
 void Sys_ShutDownLPDeInit(void);
 INT16U  Sys_GetSystemCurrent_mA (void);
 
-inline void  Sys_DelayMs (INT16U count);
+void  Sys_DelayMs (INT16U count);
 
 void  Sys_BeepOn(void);
 void  Sys_BeepOff(void);

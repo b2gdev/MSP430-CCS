@@ -1,30 +1,29 @@
 /*
 *********************************************************************************************************
-*   SPI
-*   SPI Functions
+*   Firmware update
 *
-*   Copyright © 2010 Zone24x7 Inc. All rights reserved. 
+*   Copyright © 2010 Zone24x7 Inc. All rights reserved.
 *
-*   No part of this publication may be reproduced, transmitted, transcribed, stored in a 
-*   retrieval  system,  or  translated  into  any language, in any form or by any means, 
-*   electronic, mechanical, photocopying, recording, or otherwise, without prior written 
-*   permission  from  Zone24x7  Inc.  All  copyright, confidential information, patents, 
-*   design rights and all other intellectual property rights of whatsoever nature in and 
-*   to  any  source  code contained herein (including any header files and demonstration 
-*   code  that may be included), are and shall remain the sole and exclusive property of 
-*   Zone24x7  Inc.  The  information  furnished  herein  is  believed to be accurate and 
-*   reliable.  However, no responsibility is assumed by Zone24x7 Inc for its use, or for 
+*   No part of this publication may be reproduced, transmitted, transcribed, stored in a
+*   retrieval  system,  or  translated  into  any language, in any form or by any means,
+*   electronic, mechanical, photocopying, recording, or otherwise, without prior written
+*   permission  from  Zone24x7  Inc.  All  copyright, confidential information, patents,
+*   design rights and all other intellectual property rights of whatsoever nature in and
+*   to  any  source  code contained herein (including any header files and demonstration
+*   code  that may be included), are and shall remain the sole and exclusive property of
+*   Zone24x7  Inc.  The  information  furnished  herein  is  believed to be accurate and
+*   reliable.  However, no responsibility is assumed by Zone24x7 Inc for its use, or for
 *   any infringements of patents or other rights of third parties resulting from its use.
 *********************************************************************************************************
 */
 
 /*
 *********************************************************************************************************
-*   SPI Functions
+*   Firmware update
 *
-*   File Name     : cp_spi.h
+*   File Name     : cp_fw_update.h
 *   Version       : V1.0.0
-*   Programmer(s) : PS
+*   Programmer(s) : AH
 *********************************************************************************************************
 *   Note(s)
 *********************************************************************************************************
@@ -36,8 +35,8 @@
 *********************************************************************************************************
 */
 
-#ifndef __CP_SPI_H__
-#define __CP_SPI_H__
+#ifndef __CP_FW_UPDTE_H__
+#define __CP_FW_UPDTE_H__
 
 
 /*
@@ -52,11 +51,6 @@
 *   EXTERNS
 *********************************************************************************************************
 */
-#ifdef SPI_MODULE
-    #define CP_SPI_EXT
-#else
-    #define CP_SPI_EXT extern
-#endif
 
 /*
 *********************************************************************************************************
@@ -69,9 +63,34 @@
 *   DEFINES
 *********************************************************************************************************
 */
-/* SPI Buffer sizes */
-#define     SPI_1_RX_BUF_SIZE               1024
-#define     SPI_1_TX_BUF_SIZE               256
+#define SEG_SIZE	 			512
+#define SEG_STRT				0
+
+#define ISR_MEM_SEG_START	 	0xFE00
+#define COPY_CODE_START_LOC	 	0x16200
+#define INFOB_START_LOC	 		0x1080
+#define INFOC_START_LOC	 		0x1040
+#define INFOD_START_LOC	 		0x1000
+
+#define INFOB_UNINIT_CHAR		0xFFFFFFFF
+
+#define NO_OF_CODE_PRTS			4
+#define NO_OF_WRITE_TRIES		5
+
+#define COPY_FUNC_SIZE_MAX		0x0400
+#define MAIN_MEM_SIZE_MAX		0x67BE
+#define EXT_MEM_SIZE_MAX		0x31FF
+#define ISR_MEM_SIZE_MAX		0x40
+
+#define SEGMENT_NO_POS			0
+#define SEGMENT_NO_MIN			0
+#define SEGMENT_NO_MAX			78
+
+#define INT_VEC_SZ_TI			64
+#define INT_VEC_SZ_GNU			32
+
+#define ISR_DATA_START_TI		0xFFC0
+#define ISR_DATA_START_GNU		0xFFE0
 
 /*
 *********************************************************************************************************
@@ -84,28 +103,33 @@
 *   GLOBAL VARIABLES
 *********************************************************************************************************
 */
-CP_SPI_EXT CIRC_BUFFER SPI_1_ReceiveBuffer;             /* Global buffer to hold SPI receive data   */
-CP_SPI_EXT CIRC_BUFFER SPI_1_TransmitBuffer;            /* Global buffer to hold SPI transmit data  */
-
-     
-CP_SPI_EXT INT08U spi_1_rx_buf [SPI_1_RX_BUF_SIZE];
-CP_SPI_EXT INT08U spi_1_tx_buf [SPI_1_TX_BUF_SIZE];
+extern BOOLEAN meta_data_ok;
+extern BOOLEAN meta_data_ack_sent;
 
 /*
 *********************************************************************************************************
 *   MACROS
 *********************************************************************************************************
 */
-#define SPI_1_TX_INT_ENABLE()   (UC1IE |= UCA1TXIE)
-#define SPI_1_TX_INT_DISABLE()  (UC1IE &= ~(UCA1TXIE))
 
 /*
 *********************************************************************************************************
 *   FUNCTION PROTOTYPES
 *********************************************************************************************************
 */
-void  SPI_Init (void);
-void  SPI_DeInit (void);
+INT08U get_fw_ver_major (void);
+INT08U get_fw_ver_minor (void);
+INT08U get_other_code_fw_major (void);
+INT08U get_other_code_fw_minor (void);
+INT16U get_reset_address (void);
+BOOLEAN health_check (void);
+void write_int_vec_data(void);
+BOOLEAN get_first_time_run (void);
+void set_first_time_run_false(void);
+BOOLEAN copy_one_seg_from_spi_data(PTR_INT08U segment_data);
+BOOLEAN validate_metadata ();
+void copy_metadata (PTR_INT08U meta_data);
+void write_code_from_flash(void);
 
 /*
 *********************************************************************************************************
@@ -146,4 +170,4 @@ void  SPI_DeInit (void);
 *********************************************************************************************************
 */
 
-#endif  /* End of __MODULE_H__ */
+#endif  /* End of __CP_FW_UPDTE_H__ */

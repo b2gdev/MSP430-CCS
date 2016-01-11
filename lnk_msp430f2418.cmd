@@ -1,5 +1,5 @@
 /* ============================================================================ */
-/* Copyright (c) 2014, Texas Instruments Incorporated                           */
+/* Copyright (c) 2015, Texas Instruments Incorporated                           */
 /*  All rights reserved.                                                        */
 /*                                                                              */
 /*  Redistribution and use in source and binary forms, with or without          */
@@ -44,7 +44,7 @@
 /* -heap   0x0100                                   HEAP AREA SIZE            */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-/* Version: 1.159                                                             */
+/* Version: 1.167                                                             */
 /*----------------------------------------------------------------------------*/
 
 /****************************************************************************/
@@ -61,8 +61,8 @@ MEMORY
     INFOB                   : origin = 0x1080, length = 0x0040
     INFOC                   : origin = 0x1040, length = 0x0040
     INFOD                   : origin = 0x1000, length = 0x0040
-    FLASH                   : origin = 0x3100, length = 0xCEBE
-    FLASH2                  : origin = 0x10000,length = 0x10000
+    FLASH                   : origin = 0x3100, length = 0x62FE
+    FLASH2                  : origin = 0x10000,length = 0x29FF
     INT00                   : origin = 0xFFC0, length = 0x0002
     INT01                   : origin = 0xFFC2, length = 0x0002
     INT02                   : origin = 0xFFC4, length = 0x0002
@@ -165,7 +165,7 @@ SECTIONS
     TIMERB1      : { * ( .int28 ) } > INT28 type = VECT_INIT
     TIMERB0      : { * ( .int29 ) } > INT29 type = VECT_INIT
     NMI          : { * ( .int30 ) } > INT30 type = VECT_INIT
-    .reset       : {}               > RESET  /* MSP430 Reset vector         */ 
+    .reset       : {}               > RESET  /* MSP430 Reset vector         */
 }
 
 /****************************************************************************/

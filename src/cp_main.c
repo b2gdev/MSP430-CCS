@@ -84,6 +84,8 @@ BOOLEAN is_pwr_status_gpio_stable = FALSE;
 /* Used for TPS pwr pin toggle */
 INT32U time_stamp_start = 0xffffffff;
 
+void (*new_main_func) (void);
+
 /*
 *********************************************************************************************************
 *   LOCAL FUNCTION PROTOTYPES
@@ -115,8 +117,17 @@ int  main (void)
 {
     INT32U debounce_cnt;                /* CC Pwr stable GPIO debounce */   
     INT08U brl_disp_str[24] = {0,0,0,0,0,1,0,0,0,0,17,69,0,0,0,0,231,205,128,0,0,0,250,90}; //Booting mesg: "Starting"
+    INT08U brl_disp_fw_update[24] = {0x00,0x0c,0x00,0x04,0x00,0x01,0x00,0x00,0x49,0x40,0x11,0x07,0x00,0x02,0xcc,0xd4,0xe7,0x24,0x80,0x01,0x5b,0x6c,0xfa,0x7d}; //Firmware updating mesg: "Updating Firmware"
+    INT08U battery_level        = 0x00;
 
     WDTCTL = WDTPW + WDTHOLD;           /* Stop watchdog timer to prevent time out reset            */
+
+    if(health_check()){					/* Check weather metadata is ok								*/
+    	new_main_func = (void *) (get_reset_address());
+    	new_main_func();				/* Go to new code											*/
+    }
+
+    write_int_vec_data();				/*	Write interrupt code space data							*/
 
     Sys_GpioInit();                     /* Initialize GPIO                                          */
 
@@ -158,7 +169,36 @@ int  main (void)
 
 	Sys_DelayMs(250);
 
-	/* Wait for power key OFF to ON transition */
+	if(get_first_time_run()){			/* Auto start on the first time after a firmwre update		*/
+		KEYPAD_MainKeys = (PWR_SW) ?  (PWR_KEY_BIT) : (0x00000000);
+
+		is_power_switch_on = (KEYPAD_MainKeys & PWR_KEY_BIT) ? 1 : 0;
+
+		Brd_Pwr_Update(Pwr_Get_CC_Pwr_Status());
+
+		battery_level = Bat_GetInitialBatteryLevel();
+
+		if((!CP_VBUS_OTG_DET) && ((battery_level == BAT_LEVEL_SHORT_CCT) || (battery_level == BAT_LEVEL_DEAD) || (battery_level == BAT_LEVEL_WEAK))){
+			TmrB_IntDisable();			//Do not alllow timerB interrupt to run until the BEEPS are over
+
+			/* Weak battery indication      */
+			Sys_BeepHigh(100);
+			Sys_DelayMs(200);
+			Sys_BeepHigh(100);
+			Sys_DelayMs(200);
+			Sys_BeepHigh(100);
+
+			TmrB_IntEnable();
+		}else{
+			Sys_BeepOn(); 			// Startup indication beep
+			CC_CP_PWRON_HIGH();
+			time_stamp_start = Sys_Get_Heartbeat();
+			power_switch_toggle = 1;
+			hold_at_reset = 0;
+		}
+	}
+
+	/* Wait for power key OFF to ON transition after first time run*/
 	while(hold_at_reset){
     	if(CP_VBUS_OTG_DET){
     		__low_power_mode_3();		/* Stay at LMP3 to support chrging when charger is plugged  */
@@ -168,6 +208,8 @@ int  main (void)
 		}
     	Sys_DelayMs(250);
     }
+
+	set_first_time_run_false();
 
 	Pwr_SystemPowerEnable();			/* This will power on the main processor.Place this after
 										   switch transition										*/
@@ -193,6 +235,16 @@ int  main (void)
     			if(Is_Pwr_SystemPowerEnabled()){
     				Cmd_RxCommandProcess();
     				Cmd_TxCommandProcess();
+
+    				if(meta_data_ok && meta_data_ack_sent){
+						__bic_SR_register(GIE);
+
+						while(OMAP_STATUS_1){}
+						Brd_WriteDisplay(brl_disp_fw_update);
+						write_code_from_flash();
+
+						__bis_SR_register(GIE);
+    				}
     			}else{}
 			  	#endif
     											/* Go LMP at suspend state depending on the power switch    */

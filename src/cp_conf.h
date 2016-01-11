@@ -66,6 +66,7 @@
 #include "cp_br_display.h"
 #include "cp_keypad.h"
 #include "cp_timer_b.h"
+#include  "cp_fw_update.h"
 
 /*
 *********************************************************************************************************
@@ -95,8 +96,20 @@
 #define P7         (1L << 7)
 
 /*  Firmware Version */
-#define     FW_VERSION_MAJOR    0x03        /* V3.1                                               */
-#define     FW_VERSION_MINOR    0x01
+#define     FW_VERSION_MAJOR    128
+#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
+#ifdef USE_BQ24160							/* Do not edit the minor version        							 */
+#define     FW_VERSION_MINOR    0x00        /* Vx.0 - Base code TI  compiler - New charger version               */
+#else
+#define     FW_VERSION_MINOR    0x02        /* Vx.2 - Base code TI  compiler - Old charger version               */
+#endif
+#else
+#ifdef USE_BQ24160
+#define     FW_VERSION_MINOR    0x01        /* Vx.1 - Base code GNU compiler - New charger version               */
+#else
+#define     FW_VERSION_MINOR    0x03        /* Vx.3 - Base code GNU compiler - Old charger version               */
+#endif
+#endif
 
 /*  Supported Features  */
 #define     ENABLE_BATTERY

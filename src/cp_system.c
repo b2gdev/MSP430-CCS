@@ -411,7 +411,7 @@ void Sys_ShutDownLPDeInit(void)
 
 }
 
-inline void  Sys_DelayMs (INT16U count)
+void  Sys_DelayMs (INT16U count)
 {
     INT16U i = 0;
     
